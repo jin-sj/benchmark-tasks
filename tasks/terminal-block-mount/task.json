@@ -1,0 +1,21 @@
+{
+  "title": "Mount a terminal block next to an existing one on a loose DIN rail",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "DIN rail",
+    "terminal block",
+    "snap fit",
+    "electrical panel",
+    "assembly"
+  ],
+  "instruction": "Hold the DIN rail down with one arm. With the other, take a blue terminal block from the tray, snap it onto the rail by pressing it straight down, and slide it along the rail until it sits flush against the beige block.",
+  "context": "Mounting terminal blocks side by side on a DIN rail is a routine step in wiring control panels; on a loose rail it needs one hand to steady the rail while the other snaps and seats the block.",
+  "setup": "On the table in front of the arms: a loose steel TS35 x 7.5 top-hat DIN rail, 240 mm long, 150 g, lying web-down (open side up) and running left to right, its centre 0.30 m in front of the arm bases and 0.04 m right of their midline. Fixed on the rail: a zinc end bracket (8 mm thick, tapered from 44 mm wide at the base to 24 mm, 37.5 mm tall above the lips) near each end, the left one 43 mm from the rail's left end, and a beige terminal block mounted against the left bracket's inner face. In front of the right arm, centred 0.30 m forward and 0.27 m right: an open black plastic tray, 170 x 64 mm inside, 12 mm walls, no slots, holding three blue polyamide terminal blocks standing upright side by side 5.2 mm apart, each 44 mm further from the arms than its right-hand neighbour, so each leans on the next. The blocks are shaped like a Weidmueller WDU 2.5 feed-through terminal: 5.1 mm thick, 60 mm long, 46 mm tall (39.5 mm above the rail when mounted), about 8 g, with a clamping screw near each end. Each block has a spring foot at both ends of its base that clicks under the rail's lips when pressed straight down (about 5 N); a latched block is clamped to the rail and slides along it only when pushed with about 2 N.",
+  "scoring": "Best block, at the end of the run: 1.0 if a blue block is latched and flush against the beige block (gap of 0.5 mm or less at both ends of its face, at the base and near the top) and still, for 1 s; 0.75 latched (both feet clicked under the lips and the clamp engaged: seated on the lips within 0.8 mm, centred within 1 mm, square and level within 3 degrees, between the end brackets); 0.5 resting on the lips (between the brackets, within 4 mm of centre, base within 8 mm of the lips, tilt under 10 degrees); 0.25 a block lifted 25 mm or more above the table; else 0. If the rail has moved 10 mm or more or turned 3 degrees or more from its start, no success and the score is capped at 0.25.",
+  "run_limit": "1,200 steps (60 s at 20 Hz)",
+  "reset_notes": "Put the rail back in its starting position and the blocks back in the tray; a latched block cannot be pulled straight off: spread a foot with a screwdriver to remove it.",
+  "fidelity": "PhysX at 240 Hz. Rail lips are 2 mm thick (1 mm on a real rail) so contacts don't tunnel. The blocks follow the WDU 2.5 catalogue drawing and CAD to about 0.5 mm (coded as coordinates, no CAD file read); they collide as 14 convex pieces, and screws and wire entries are looks only. The latch is a spring stand-in for the plastic flexures: each foot is a rigid link on a sprung joint across the rail (1 N/mm) that clicks under the lip, and sprung seat pads (3 N/mm) clamp the lip against the teeth, with latch features enlarged (2 mm tooth reach) for PhysX's contact accuracy. A block clicks on at about 5 N (likely well below a real block's snap-on force, which was not measured) and slides at about 2 N latched; it cannot be pulled straight off. The latch parts carry joint armature for stability, which makes PhysX report a false velocity for a clamped block, so the block's velocity is computed from its pose change per control step. The mounted block and brackets are rigidly part of the rail. Friction: steel 0.3, polyamide 0.35, latch parts on the lips 0.25, table and fingers 0.5. The tray is fixed.",
+  "scores": "Dream-1 run: 0.0 (1,200 steps; the arms never reached the rail or the blocks); scripted demo: 1.0 (success at step 540); one-arm demo (rail not held): 0.25; no-press demo: 0.5; no-slide demo: 0.75",
+  "media": "M-FJ97SC"
+}
