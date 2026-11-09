@@ -1,0 +1,21 @@
+{
+  "title": "Find the terminal block that is not latched on a DIN rail and press it home",
+  "category": "Impact on jobs",
+  "keywords": [
+    "DIN rail",
+    "terminal block",
+    "snap-fit",
+    "inspection",
+    "fault finding",
+    "contact-rich"
+  ],
+  "instruction": "One of the terminal blocks on the DIN rail is not latched. Find it and press it home so it latches, without unlatching or moving the other blocks.",
+  "context": "A terminal block hooked on but never clicked home looks almost right, but it can work loose and break a circuit. Panel builders and inspectors find and fix such blocks before a cabinet is wired or switched on.",
+  "setup": "On the table in front of the arms: a steel TS35 x 7.5 top-hat DIN rail, 500 mm long, fixed flat to the table (open side up) and running left to right, with a zinc end bracket 4.2 cm in from each end; its centre 0.30 m in front of the arm bases and 0.04 m right of their midline. On it, side by side with 0.2 mm between them, five identical beige polyamide terminal blocks (Weidmueller A3C 2.5 shape: 5.1 mm thick along the rail, 65 mm long across it, 36 mm tall, 7.6 g), the middle one on the rail's centre. Each has a fixed hook at its far end (away from the arms) and a sprung foot at its near end. Four are latched. The fourth from the left is hooked under the far lip, but its sprung foot rests on top of the near lip: its near end stands about 5 mm high and it is tipped about 7.5 degrees.",
+  "scoring": "At the end of the run, for the fourth block from the left: 1.0 if latched (both feet under the lips, base within -0.5..+0.8 mm of the lip tops at both lip edges, within 1 mm of the rail's centreline, square and level within 3 degrees) and still for 1 s; 0.5 if tipped under 3 degrees but not latched; 0.25 if tipped under 5 degrees; 0 otherwise, including if it is off the rail. Capped at 0.25 if any of the other four blocks is no longer latched or has moved 1 mm or more along the rail.",
+  "run_limit": "600 steps (30 s at 20 Hz)",
+  "reset_notes": "Unlatch the fourth block (push it toward the arms about 2.5 mm, lift the near end), then set its fixed hook under the far lip and rest its sprung foot on top of the near lip. Nothing is consumed.",
+  "fidelity": "PhysX at 240 Hz. Block outline from the A3C 2.5 CAD; collision simplified to boxes and convex pieces. The latch is a spring stand-in: the sprung foot is a 1 N/mm slider and two sprung seat pads clamp the lips (stiffnesses not measured). Rail lips 2 mm (1 mm on a real rail). Block velocity from its pose change.",
+  "scores": "Dream-1 run: 0.0 (600 steps; it lifted both arms and turned the wrists but never came near the rail); scripted demo: 1.0 (success at step 126)",
+  "media": "M-58YVYJ"
+}
