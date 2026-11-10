@@ -1,0 +1,21 @@
+{
+  "title": "Open the knife disconnect on one named terminal block, leaving the others closed",
+  "category": "Impact on jobs",
+  "keywords": [
+    "DIN rail",
+    "disconnect terminal block",
+    "lever",
+    "articulated object",
+    "fine manipulation",
+    "isolation"
+  ],
+  "instruction": "Open the disconnect lever of the second terminal block from the left, and leave the other four levers closed.",
+  "context": "Electricians open a disconnect terminal to isolate one circuit for a measurement or a repair while its neighbours stay connected. The levers sit a few millimetres apart, and opening the wrong one interrupts a circuit that should stay live.",
+  "setup": "On the table in front of the arms: a steel TS35 x 7.5 top-hat DIN rail, 500 mm long, fixed flat to the table (open side up) and running left to right, with a zinc end bracket 4.2 cm in from each end; its centre 0.30 m in front of the arm bases and 0.04 m right of their midline. Latched on it, side by side with no gap, five identical grey polyamide knife-disconnect terminal blocks (6.2 mm thick along the rail, 62 mm long across it, 34 mm tall above the rail's lips), the middle one on the rail's centre. On each block's top, an orange plastic lever (4 mm wide, 18 mm long, 3 mm thick) hinged about an axis along the rail, 2 mm beyond the block's middle on the far side. All five levers start closed: lying flat, the free end toward the arms, with a 6 mm tall upright tab at that end. A lever swings up and away from the arms and snaps open past 45 degrees, standing upright at 95 degrees (about 1 to 2 N at the tab).",
+  "scoring": "At the end of the run: 1.0 if the second lever from the left is open (80 degrees or more from closed) and the other four are closed (10 degrees or less), held for 1 s; 0.5 if it is open but one other lever is not closed; 0.25 if it is open but two or more others are not closed; 0 if it is not open.",
+  "run_limit": "600 steps (30 s at 20 Hz)",
+  "reset_notes": "Push every lever back down flat. Nothing is consumed.",
+  "fidelity": "PhysX at 240 Hz. The blocks are fixed on the rail. Each lever is a hinge with a spring that pulls it to the nearer stop, switching side at 45 degrees (a stand-in for an over-centre snap; stiffness not measured). Housing is a generic disconnect-terminal outline, not from CAD; no knife blade or electrical contact is modelled: open and closed are read from the lever's angle.",
+  "scores": "Dream-1 run: 0.0 (600 steps; its left arm went to the rail's left end bracket and no lever was touched); scripted demo: 1.0 (success at step 190)",
+  "media": "M-METVLA"
+}
