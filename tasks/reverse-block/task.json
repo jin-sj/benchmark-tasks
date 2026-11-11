@@ -1,0 +1,22 @@
+{
+  "title": "Find the terminal block mounted the wrong way round and remount it the right way round",
+  "category": "Impact on jobs",
+  "keywords": [
+    "DIN rail",
+    "terminal block",
+    "snap-fit",
+    "fault finding",
+    "disassembly and assembly",
+    "reorientation",
+    "contact-rich"
+  ],
+  "instruction": "One of the terminal blocks on the DIN rail is mounted the wrong way round. Take it off and mount it the right way round in the same place, without disturbing the other blocks.",
+  "context": "Terminal blocks are not symmetric: a block snapped on backwards puts its wire entries and marker on the wrong side, a wiring error in a panel. Fixing it means releasing the latch, turning the block and snapping it back on in its place without loosening its neighbours.",
+  "setup": "On the table in front of the arms: a steel TS35 x 7.5 top-hat DIN rail, 500 mm long, fixed flat to the table (open side up) and running left to right, with a zinc end bracket 4.2 cm in from each end; its centre 0.14 m in front of the arm bases and 0.066 m right of their midline. Latched on it, 33 mm apart centre to centre, five identical beige polyamide terminal blocks (Weidmueller A3C 2.5 shape: 5.1 mm thick along the rail, 65 mm long across it, 36 mm tall, 7.6 g), the middle one on the rail's centre. Each has a fixed hook at one end of its base (it gives about 2.5 mm under a firm push) and a sprung foot at the other. The four on the right have the hook under the far lip (away from the arms); the leftmost one, 66 mm left of the rail's centre (on the arms' midline), is mounted the wrong way round, its hook under the near lip.",
+  "scoring": "At the end of the run, for the leftmost block: 1.0 if latched the right way round (hook toward the far side, square within 3 degrees; base 0.0 to 1.3 mm above the lip tops at both lip edges, within 1 mm of the rail's centreline, sprung foot in, level within 3 degrees) within 3 mm of where it started along the rail, and still for 1 s; 0.75 if latched the right way round elsewhere on the rail; 0.5 if off the rail (base 20 mm or more above the lips, or centre outside the rail's footprint) or on it the right way round but not latched; 0.25 if still the wrong way round but no longer latched; 0 otherwise. Capped at 0.25 if any other block is no longer latched or has moved 1 mm or more along the rail.",
+  "run_limit": "1,200 steps (60 s at 20 Hz)",
+  "reset_notes": "Take the leftmost block off, turn it round and latch it back in its place the wrong way round (hook under the near lip). Check the other blocks are on their marks. Nothing is consumed.",
+  "fidelity": "PhysX at 240 Hz. Block outline from the A3C 2.5 CAD; collision simplified to boxes and convex pieces. The latch is a spring stand-in: sprung foot a 1 N/mm slider, the fixed hook's bending a 1 N/mm slide of up to 2.5 mm (softer than a real hook; neither measured). Rail lips 2 mm (1 mm real); the teeth's clearance to the lips is widened to 0.8 mm to match a real block's.",
+  "scores": "Dream-1 run: 0.0 (1,200 steps; neither arm came near the strip); scripted demo: 1.0 (success at step 667)",
+  "media": "M-47LGKC"
+}
