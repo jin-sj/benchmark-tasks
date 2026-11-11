@@ -1,0 +1,21 @@
+{
+  "title": "Put a spare fuse into the storage pocket of one fuse terminal block in a mixed strip",
+  "category": "Impact on jobs",
+  "keywords": [
+    "DIN rail",
+    "fuse terminal block",
+    "peg-in-hole",
+    "small part insertion",
+    "fine manipulation",
+    "maintenance"
+  ],
+  "instruction": "Take the spare fuse from the rack and put it into the spare-fuse pocket of the middle one of the three fuse terminal blocks on the DIN rail.",
+  "context": "Fuse terminal blocks keep a spare fuse beside the fuse holder so a blown fuse can be replaced on the spot. Restocking the spares after maintenance means placing a 5 mm fuse into a small pocket on the right block of a crowded strip.",
+  "setup": "On the table in front of the arms: a steel TS35 x 7.5 top-hat DIN rail, 500 mm long, fixed flat to the table (open side up) and running left to right, with a zinc end bracket 4.2 cm in from each end; its centre 0.30 m in front of the arm bases and 0.04 m right of their midline. Latched on it side by side, nine polyamide terminal blocks; from the left: two blue plain blocks (5.1 mm thick), one grey plain block (6.2 mm), three grey fuse blocks (8.2 mm each, the middle one on the rail's centre), two beige plain blocks (5.1 mm), one grey plain block (6.2 mm). Plain blocks are 52 mm long across the rail and 28 mm tall above its lips; fuse blocks 62 mm long and 34 mm tall. Each fuse block has an upright fuse-holder plate (25 x 24 x 6 mm) on the far half of its top and an empty spare-fuse pocket in the near half: a square hole 6 mm wide, 14 mm deep, its axis 14.5 mm toward the arms from the rail's centreline, with a 45 degree lead-in (2 mm near and far, 0.9 mm at the sides). A black plastic rack (30 x 30 x 12 mm, a 6.6 mm square hole 8 mm deep in its top) is fixed to the table, its centre 0.18 m in front of the arm bases and 0.22 m right of their midline; one 5 x 20 mm glass cartridge fuse stands upright in it, 12 mm out of the rack.",
+  "scoring": "At the end of the run: 1.0 if the fuse is stored in the middle fuse block's pocket (its centre within 1.5 mm of the pocket's axis, its lower end within 1 mm of the pocket's floor, so 6 mm of it stands out of the block's top) and still for 1 s; 0.5 if it is partly in that pocket (centre within 1.5 mm of the axis, lower end 2 mm or more below the block's top, but not on the floor); 0.25 if it was taken from the rack (its centre 30 mm or more from where it started), wherever it is, including in another block's pocket; 0 otherwise.",
+  "run_limit": "800 steps (40 s at 20 Hz)",
+  "reset_notes": "Take the fuse out of the pocket and stand it back in the rack. Nothing is consumed.",
+  "fidelity": "PhysX at 240 Hz. The pocket and the rack are stand-ins, not from a manufacturer's CAD: the pocket's size, lead-in and loose fit are this task's choices (real pockets hold the fuse with light friction). Blocks are fixed on the rail with generic outlines; the fuse-holder plate does not open. The fuse looks round but collides as a 5 mm square bar; it cannot break.",
+  "scores": "Dream-1 run: 0.0 (800 steps; its right arm went over the strip, not to the rack, and the fuse stayed in the rack); scripted demo: 1.0 (success at step 473)",
+  "media": "M-5XMXRR"
+}
