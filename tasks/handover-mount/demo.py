@@ -5,6 +5,7 @@
     python demo.py --variant drop      # taken cleanly, then dropped on the table: capped at 0.25
     python demo.py --variant snatch    # grips and pulls away at once, before the hand lets go: 0
     python demo.py --variant rough     # presses down on the person's forearm first (over 10 N): 0
+    python demo.py --variant push      # grips, then shoves the block into the hand before it lets go (over 5 N): 0
     python demo.py --variant one_arm   # the full right-arm script, the rail not held: 1.0 (the hold is optional)
 
 It drives the ``yam_arena`` embodiment directly (20 Hz control, object_jitter 0, as a trial runs) and reads the
@@ -41,7 +42,7 @@ INSTRUCTION = (
     "Take the terminal block from the person's hand: grip it while they still hold it, so they can let go. Then press "
     "it straight down onto the DIN rail until it clicks, without knocking the rail out of place."
 )
-VARIANTS = ("full", "no_press", "drop", "snatch", "rough", "one_arm")
+VARIANTS = ("full", "no_press", "drop", "snatch", "rough", "push", "one_arm")
 CAMERAS = ("top_cam", "left_cam", "right_cam")
 CONTROL_HZ = 20.0
 DT = 1.0 / CONTROL_HZ
@@ -66,6 +67,7 @@ HOLD_LEAN = -math.radians(34.0)  # left arm: tips toward the block, wrist away f
 AFTER_SUCCESS_S = 3.0  # the demo keeps running this long after success, hands off
 CARRY_HEIGHT = 0.11  # TCP height above the table while carrying the block to the rail
 ROUGH_PRESS = 50 * MM  # "rough": the closed fingertips are commanded this far into the forearm
+PUSH_INTO = 55 * MM  # "push": the gripped block is shoved this far toward the palm while the hand still holds it
 
 
 def smooth(s: float) -> float:
@@ -250,6 +252,20 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
             yield from follow(arm, 0.0, 0.15, "grip fast", grip=0.0)
             report["gripped_step"] = world["step"]
             yield from move(arm, arm.pos + (-0.06, 0.0, 0.03), 0.3, label="pull it away at once")
+        elif variant == "push":
+            # grip, then shove the block toward the palm while the hand still holds it: no robot link touches the
+            # hand, but the block drives into the palm and the pinch, and the hand is pushed back on its springs
+            yield from follow(arm, 0.0, 0.25, "grip", grip=0.0)
+            report["gripped_step"] = world["step"]
+            yield from move(arm, arm.pos + (PUSH_INTO, 0.0, 0.0), 0.3, label="shove it into the hand")
+            yield from move(arm, arm.pos, 0.5, label="keep shoving")
+            report["pushed_step"] = world["step"]
+            phase["right"] = "hold still until the hand lets go"
+            for _ in range(round(4.0 / DT)):
+                if hand().phase == "withdraw":
+                    break
+                yield
+            yield from wait(arm, 0.3, "let the hand withdraw")
         else:
             yield from follow(arm, 0.0, 0.8, "grip across the broad faces", grip=0.0)
             report["gripped_step"] = world["step"]
@@ -392,6 +408,7 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
             "success": res.info.get("success"), "stage": task.stage(st), "hand": h.phase,
             "released": h.released, "snatched": h.snatched, "dropped": h.dropped,
             "contact_n": round(h.contact_n, 3), "peak_contact_n": round(h.peak_contact_n, 3),
+            "load_n": round(h.load_n, 3), "peak_load_n": round(h.peak_load_n, 3),
             "grip_n": [round(g, 3) for g in h.grip_n],
             "rail_shift_mm": shift / MM, "rail_turn_deg": turn, "across_mm": bs["across"] / MM,
             "along_mm": bs["along"] / MM, "feet_mm": [f / MM for f in bs["feet"]],
@@ -440,7 +457,7 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         "final_info": {k: (float(v) if isinstance(v, (int, float, np.floating)) else v) for k, v in result.info.items()},
         "final_stage": task.stage(st),
         "hand": {"released": h.released, "snatched": h.snatched, "dropped": h.dropped,
-                 "peak_contact_n": h.peak_contact_n},
+                 "peak_contact_n": h.peak_contact_n, "peak_load_n": h.peak_load_n},
         "rail_shift_mm": shift / MM,
         "rail_turn_deg": turn,
         "block": {k: (v / MM if k in ("across", "along") else v) for k, v in task.block_on_rail(st).items()},

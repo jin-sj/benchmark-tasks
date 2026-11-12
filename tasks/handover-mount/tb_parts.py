@@ -1,4 +1,4 @@
-"""The task's own parts: a TS35 DIN rail assembly, WDU 2.5-style terminal blocks with sprung feet, and a parts tray.
+"""The task's own parts: a TS35 DIN rail assembly, generic terminal blocks with sprung feet, and a parts tray.
 
 yam_arena task files support single primitives and library assets only, and yam_arena has no extension point
 for multi-shape or jointed parts. This module is the task's own minimal mechanism, kept in the task folder:
@@ -15,12 +15,12 @@ The parts (dimensions in mm in the comments, metres in code):
   lips (thickened so a pressed tooth cannot tunnel through them at 240 Hz), lip outer edges at +-17.5 from the
   centreline. Fixed to it: an end bracket near each end and a beige terminal block
   mounted against the left bracket.
-- block (an articulation of five bodies: housing, two feet, two seat pads): a terminal block shaped like a Weidmueller WDU 2.5 feed-through
-  terminal: 5.1 thick, 60 long across the rail, 46.25 tall from the bottom of its feet (39.5 above the rail).
-  Its outline, screw shafts, wire entries, cross-connection channel and feet follow the manufacturer's
-  catalogue drawing and CAD, simplified to about 0.5 mm and coded below as plain coordinates (no CAD file is
-  read). Each foot is its own link on a prismatic joint across the rail, sprung inward by a joint drive: a
-  stand-in for the real foot's plastic flexure beams.
+- block (an articulation of five bodies: housing, two feet, two seat pads): a generic terminal block of this
+  project's own design, in two models. "SYM": a screw-clamp feed-through block with a sprung foot at each end,
+  5.1 thick, 60 long across the rail, 46.25 tall from the bottom of its feet (39.5 above the rail). "HOOK": a
+  push-in block with a fixed hook at one end and a sprung foot at the other, 5.1 thick, 65 long, 36 tall. Their
+  outlines are simple polygons coded below as plain coordinates. Each sprung foot is its own link on a prismatic
+  joint across the rail, sprung inward by a joint drive: a stand-in for a real foot's plastic flexure beams.
 - tray (a fixed collider): an open tray with low walls and no slots.
 
 The latch (a spring hack, not a flexure model), all flat-on-flat contacts, which PhysX resolves exactly:
@@ -73,65 +73,54 @@ BRACKET_HALF_X = 22.0 * MM  # at the base; 12 mm at the top
 BRACKET_TOP = 45.0 * MM
 HOLD_Y = 105.0 * MM  # where the left arm presses the rail (in the stub, 36 mm from the mounted block)
 
-# -- terminal block: WDU 2.5 outline --------------------------------------------------------------------------
-# Section coordinates are (across, up) in mm in the drawing frame: across 0..60 over the block's length, up from
-# the bottom of its feet. The rail's centreline is at across 32 (the terminal is 2 mm off-centre on the rail) and
-# the lip tops at up 6.76 when seated. Block frame: x = (across - 32) mm, z = (up - 6.76) mm.
+# -- terminal block: generic screw-clamp feed-through outline (this project's own design) ---------------------------
+# Section coordinates are (across, up) in mm in the design frame: across 0..60 over the block's length, up from the
+# bottom of its feet. The rail's centreline is at across 32 (the block sits 2 mm off-centre on the rail) and the lip
+# tops at up 6.76 when seated. Block frame: x = (across - 32) mm, z = (up - 6.76) mm.
 _ACROSS0, _UP0 = 32.0, 6.76
-# Housing outline (visual), counter-clockwise, from the drawing: wings, angled shoulders with their marker comb
-# serrations, the two screw shafts, the central cross-connection channel, the wire-entry steps and the release ledge.
+# Housing outline (visual), counter-clockwise: lower wings over the feet, the wire-entry steps, upper wings, two screw
+# shafts between posts, and a cross-connection channel in the middle.
 _HOUSING_OUTLINE = (
-    (16.4, 6.76), (47.5, 6.76), (47.5, 11.9), (49.0, 11.9), (49.4, 7.4), (56.8, 7.4), (57.9, 11.2), (59.9, 11.8),
-    (59.3, 12.9), (59.9, 14.8), (57.2, 17.8), (47.5, 22.4), (47.5, 26.3), (55.5, 31.8), (58.0, 36.2), (56.7, 37.1),
-    (55.2, 35.8), (54.1, 37.3), (55.4, 38.4), (54.5, 39.3), (53.0, 38.0), (51.9, 39.0), (53.2, 40.5), (52.4, 41.4),
-    (51.2, 40.2), (49.7, 41.2), (51.0, 42.8), (50.1, 43.7), (48.6, 42.3), (47.5, 43.4), (48.8, 44.9), (48.5, 46.2),
-    (45.5, 46.2), (45.5, 38.7), (41.5, 38.7), (41.5, 46.2), (40.2, 45.7), (40.0, 37.7), (36.4, 34.1), (36.4, 27.8),
-    (27.6, 27.8), (27.6, 34.1), (24.0, 37.7), (23.8, 45.7), (22.5, 46.2), (22.5, 38.7), (18.5, 38.7), (18.5, 46.2),
-    (15.8, 46.2), (15.2, 44.9), (16.5, 43.4), (15.0, 42.3), (13.8, 43.6), (13.0, 42.7), (14.3, 41.2), (13.2, 40.2),
-    (11.6, 41.4), (10.8, 40.6), (12.1, 39.0), (10.6, 38.0), (9.4, 39.2), (8.6, 38.4), (9.9, 36.8), (8.8, 35.8),
-    (7.3, 37.1), (6.0, 36.3), (8.5, 31.8), (16.5, 26.3), (16.5, 22.4), (6.8, 17.8), (4.1, 14.7), (4.8, 12.9),
-    (0.6, 12.9), (0.0, 12.0), (3.8, 10.8), (4.8, 7.4), (14.6, 7.4), (14.5, 11.5), (15.5, 11.9),
+    (17.0, 6.76), (47.0, 6.76), (47.0, 12.0), (58.0, 12.0), (58.0, 20.0), (47.0, 22.4), (47.0, 26.3), (55.0, 33.0),
+    (55.0, 37.7), (49.0, 37.7), (49.0, 46.25), (44.0, 46.25), (44.0, 38.7), (41.0, 38.7), (41.0, 46.25), (39.0, 46.25),
+    (39.0, 37.7), (36.0, 34.7), (36.0, 29.0), (28.0, 29.0), (28.0, 34.7), (25.0, 37.7), (25.0, 46.25), (23.0, 46.25),
+    (23.0, 38.7), (20.0, 38.7), (20.0, 46.25), (15.0, 46.25), (15.0, 37.7), (9.0, 37.7), (9.0, 33.0), (17.0, 26.3),
+    (17.0, 22.4), (6.0, 20.0), (6.0, 12.0), (17.0, 12.0),
 )
-# Housing collision: convex pieces covering the outline (comb serrations, ledge and fillets smoothed). Every piece
-# is at least 1 mm thick so PhysX does not inflate it.
+# Housing collision: convex pieces covering the outline, each at least 1 mm thick so PhysX does not inflate it.
 _HOUSING_HULLS = (
-    ((16.5, 6.76), (47.5, 6.76), (47.5, 26.3), (16.5, 26.3)),  # body, up to the wire entries
-    ((0.0, 11.9), (16.4, 11.9), (16.4, 22.4), (6.8, 17.8), (0.6, 12.9)),  # left lower wing
-    ((47.5, 11.9), (59.9, 11.9), (59.9, 14.8), (57.2, 17.8), (47.5, 22.4)),  # right lower wing
-    ((8.5, 31.8), (16.5, 26.3), (16.5, 37.7), (7.4, 37.7), (6.0, 36.3)),  # left upper wing
-    ((16.5, 26.3), (27.6, 26.3), (27.6, 34.1), (24.0, 37.7), (16.5, 37.7)),  # left shoulder
-    ((7.4, 37.7), (18.5, 37.7), (18.5, 46.2), (15.8, 46.2)),  # left outer post (with the comb)
-    ((18.5, 37.7), (24.0, 37.7), (24.0, 38.7), (18.5, 38.7)),  # left screw shaft floor
-    ((22.5, 38.7), (24.0, 38.7), (24.0, 45.7), (22.5, 46.2)),  # left inner post
-    ((27.6, 26.3), (36.4, 26.3), (36.4, 27.8), (27.6, 27.8)),  # floor of the cross-connection channel
-    ((55.5, 31.8), (58.0, 36.3), (56.6, 37.7), (47.5, 37.7), (47.5, 26.3)),  # right upper wing
-    ((36.4, 26.3), (47.5, 26.3), (47.5, 37.7), (40.0, 37.7), (36.4, 34.1)),  # right shoulder
-    ((45.5, 37.7), (56.6, 37.7), (48.2, 46.2), (45.5, 46.2)),  # right outer post
-    ((40.0, 37.7), (45.5, 37.7), (45.5, 38.7), (40.0, 38.7)),  # right screw shaft floor
-    ((40.0, 38.7), (41.5, 38.7), (41.5, 46.2), (40.2, 45.7)),  # right inner post
+    ((17.0, 6.76), (47.0, 6.76), (47.0, 26.3), (17.0, 26.3)),  # body, up to the wire entries
+    ((6.0, 12.0), (17.0, 12.0), (17.0, 22.4), (6.0, 20.0)),  # left lower wing
+    ((47.0, 12.0), (58.0, 12.0), (58.0, 20.0), (47.0, 22.4)),  # right lower wing
+    ((9.0, 33.0), (17.0, 26.3), (17.0, 37.7), (9.0, 37.7)),  # left upper wing
+    ((17.0, 26.3), (28.0, 26.3), (28.0, 34.7), (25.0, 37.7), (17.0, 37.7)),  # left shoulder
+    ((15.0, 37.7), (20.0, 37.7), (20.0, 46.25), (15.0, 46.25)),  # left outer post
+    ((20.0, 37.7), (25.0, 37.7), (25.0, 38.7), (20.0, 38.7)),  # left screw shaft floor
+    ((23.0, 38.7), (25.0, 38.7), (25.0, 46.25), (23.0, 46.25)),  # left inner post
+    ((28.0, 26.3), (36.0, 26.3), (36.0, 29.0), (28.0, 29.0)),  # floor of the cross-connection channel
+    ((47.0, 26.3), (55.0, 33.0), (55.0, 37.7), (47.0, 37.7)),  # right upper wing
+    ((36.0, 26.3), (47.0, 26.3), (47.0, 37.7), (39.0, 37.7), (36.0, 34.7)),  # right shoulder
+    ((44.0, 37.7), (49.0, 37.7), (49.0, 46.25), (44.0, 46.25)),  # right outer post
+    ((39.0, 37.7), (44.0, 37.7), (44.0, 38.7), (39.0, 38.7)),  # right screw shaft floor
+    ((39.0, 38.7), (41.0, 38.7), (41.0, 46.25), (39.0, 46.25)),  # right inner post
 )
-_SCREWS = (20.5, 43.5)  # across: clamping screws in the shafts, heads on the shaft floor (up 38.7)
-_WIRE_ENTRIES = ((16.5, -1), (47.5, 1))  # across, facing: the vertical steps between the wings (up 22.4..26.3)
-# Openings through the section (looks only): the flexure loops above each foot, the cross-connection and test holes.
+_SCREWS = (22.5, 41.5)  # across: clamping screws in the shafts, heads on the shaft floor (up 38.7)
+_WIRE_ENTRIES = ((17.0, -1), (47.0, 1))  # across, facing: the vertical steps between the wings (up 22.4..26.3)
+# Openings through the section (looks only): a cross-connection hole and two test holes.
 _OPENINGS = (
-    ((5.1, 10.8), (7.0, 3.7), (13.4, 4.9), (13.7, 7.6), (13.3, 11.7), (12.0, 11.5), (11.9, 5.6), (9.9, 5.1),
-     (8.6, 6.8), (6.9, 10.7)),
-    ((50.4, 5.4), (50.8, 4.8), (54.9, 4.3), (56.7, 11.7), (55.1, 11.6), (54.0, 5.5), (53.5, 5.2), (52.1, 5.6),
-     (52.0, 11.5), (50.7, 11.8)),
-    ((10.6, 11.4), (8.4, 11.4), (8.0, 10.9), (9.1, 8.0), (10.3, 6.7), (10.9, 7.0), (11.0, 8.0)),
-    ((30.4, 14.9), (30.4, 13.3), (31.2, 12.4), (32.4, 12.3), (33.6, 13.2), (33.7, 14.8), (32.8, 15.7), (31.6, 15.8)),
-    ((8.6, 16.6), (8.1, 15.3), (9.4, 14.9), (9.9, 16.2)),
-    ((54.4, 15.0), (55.8, 15.1), (55.6, 16.5), (54.2, 16.4)),
+    ((30.5, 13.5), (33.5, 13.5), (33.5, 16.5), (30.5, 16.5)),
+    ((8.5, 15.0), (10.0, 15.0), (10.0, 16.5), (8.5, 16.5)),
+    ((54.0, 15.0), (55.5, 15.0), (55.5, 16.5), (54.0, 16.5)),
 )
 BLOCK_WIDTH = 5.1 * MM  # along the rail
 BLOCK_LENGTH = 60.0 * MM  # across the rail (x -32 .. +28 in the block frame)
 BLOCK_HEIGHT = (46.25 - _UP0) * MM  # above the lip tops: 39.5
-BLOCK_MASS = 0.0066  # housing; with both feet 7.6 g, the catalogue mass
+BLOCK_MASS = 0.0066  # housing; with both feet 7.6 g, a typical mass for a block this size
 FOOT_MASS = 0.0005
 
 # -- terminal block: feet (the latch hack) --------------------------------------------------------------------
 # One foot's section as (u, z) in mm, relaxed: u outward from the rail centreline, z up from the lip tops; the same
-# for both feet but for the release lever outside the hook (the drawing's left foot has a long one).
+# for both feet but for the release lever outside the hook (the -x foot has a long one).
 FOOT_SPRING = 1000.0  # N/m (1 N/mm) per foot, across the rail: the click
 PAD_SPRING = 3000.0  # N/m (3 N/mm) per seat pad, vertical: the clamp
 # A 0.5 g foot on these springs rings at ~250 Hz, above the 240 Hz physics rate, and the solver then lets parts
@@ -171,9 +160,9 @@ def _foot_profile(side_lever: bool):
             (tip, top_z - TIP_CHAMFER - TIP_FLAT), (tip, top_z - TIP_CHAMFER))
     arm = ((wall, top_z), (out, top_z), (out, top), (wall, top))
     if side_lever:
-        outer = ((out, bottom), (29.6, -4.66), (31.2, -3.16), (30.4, -1.26), (27.2, 0.64), (out, top))
+        outer = ((out, bottom), (28.5, -5.2), (30.5, -3.5), (30.5, -1.5), (27.0, 0.9), (out, top))
     else:
-        outer = ((out, bottom), (26.9, -4.76), (27.6, -2.16), (24.8, 0.64), (out, top))
+        outer = ((out, bottom), (26.5, -5.0), (27.5, -2.5), (25.0, 0.9), (out, top))
     return {"hook": hook, "arm": arm, "outer": outer}
 
 
@@ -267,14 +256,14 @@ def _prism(body, look, material, profile, y0, y1, visible=True) -> Shape:
 
 
 def _drawing(pts, flip=False):
-    """Drawing (across, up) mm to block-frame (x, z) m; ``flip`` mirrors across the rail centreline."""
+    """SYM design frame (across, up) mm to block-frame (x, z) m; ``flip`` mirrors across the rail centreline."""
     out = [(((a - _ACROSS0) * (-1 if flip else 1)) * MM, (u - _UP0) * MM) for a, u in pts]
     return out[::-1] if flip else out  # keep counter-clockwise
 
 
-def wdu_shapes(body: str, look: str, y: float, collide: bool = True, feet: str | None = "own",
+def sym_shapes(body: str, look: str, y: float, collide: bool = True, feet: str | None = "own",
                ) -> list[Shape]:
-    """A WDU 2.5-style terminal block centred at ``y`` along the rail, seated (origin on the lip-top plane).
+    """A SYM-model (screw-clamp) terminal block centred at ``y`` along the rail, seated (origin on the lip-top plane).
 
     ``feet``: "own" puts each foot on its own body (``foot_p``/``foot_n``, for the jointed block); "visual" adds
     them to ``body`` as looks only, with no seat pads (for a block that is part of the rail).
@@ -328,7 +317,7 @@ def rail_shapes() -> list[Shape]:
         out.append(_box("rail", "zinc", "steel", -(LIP_INNER - SHEET) + 0.5 * MM, LIP_INNER - SHEET - 0.5 * MM,
                         y0, y1, SHEET, RAIL_HEIGHT))
     # the beige block, mounted against the left bracket: its housing collides, its feet are looks only
-    for sh in wdu_shapes("rail", "beige", (BEIGE_Y[0] + BEIGE_Y[1]) / 2, feet="visual",
+    for sh in sym_shapes("rail", "beige", (BEIGE_Y[0] + BEIGE_Y[1]) / 2, feet="visual",
                          ):
         out.append(_lift(sh, RAIL_HEIGHT + SEATED_HEIGHT))
     return out
@@ -344,7 +333,7 @@ def _lift(sh: Shape, dz: float) -> Shape:
 
 
 def block_shapes() -> list[Shape]:
-    return wdu_shapes("body", "blue", 0.0)
+    return sym_shapes("body", "blue", 0.0)
 
 
 def tray_shapes() -> list[Shape]:

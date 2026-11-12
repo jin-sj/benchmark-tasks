@@ -14,7 +14,7 @@ gets no handover. Contact between the robot and the hand is measured after every
 | --- | --- |
 | `task.py` | the yam_arena task file: scene (`OBJECTS`), `success`, `score`, `distance`; docstring = what is on the table |
 | `hand.py` | the scripted hand: geometry, its script (reach, offer, let go, withdraw) and its measurements |
-| `tb_parts.py` | the rail assembly and the WDU-style block with its sprung latch, the USD writer, and the hook that lets yam_arena spawn the parts and run the hand every control step |
+| `tb_parts.py` | the rail assembly and the terminal block (this task's own generic screw-clamp design) with its sprung latch, the USD writer, and the hook that lets yam_arena spawn the parts and run the hand every control step |
 | `demo.py` | scripted two-arm demo, closed loop on the simulated object poses, and its variants |
 | `task.json` | submission metadata |
 
@@ -33,8 +33,8 @@ second on one GPU with the three cameras rendering (a full 1,200-step trial is a
 
 Scripted demo (drives the same embodiment and task-file scoring directly):
 
-    python demo.py --variant full                 # also: no_press, drop, snatch, rough, one_arm
-    python demo.py --variant all --no-video       # all six in one simulator session
+    python demo.py --variant full                 # also: no_press, drop, snatch, rough, push, one_arm
+    python demo.py --variant all --no-video       # all seven in one simulator session
     python demo.py --variant all --no-video --device cpu   # CPU physics, ~3x faster, for quick checks
 
 ## The hand
@@ -63,13 +63,20 @@ At the end of the episode:
 
 | credit | condition |
 | --- | --- |
-| 1.0 | success: handed over cleanly, never dropped, the block **latched** on the rail and still, held for 1 s in a row, with the rail in place |
+| 1.0 | success: handed over cleanly, never dropped, the block **latched** on the rail, **released** (no robot fingertip touching it) and still, held for 1 s in a row, with the rail in place |
 | 0.75 | handed over cleanly and the block **latched** (both feet clicked under the lips and the clamp engaged: its base within -0.5..+0.8 mm of the lip tops at both lip edges, both feet back in, both seat pads squeezed, centred within 1 mm, square and level within 3 degrees, between the right bracket and the beige block) |
 | 0.5 | handed over cleanly and the block **resting on the rail** (between the right bracket and the beige block, centred within 4 mm, base within 8 mm of the lips, tilt under 10 degrees) |
 | 0.25 | handed over cleanly: the hand let go into the robot's grip |
 | 0 | otherwise |
 
-- **Safety:** if the robot ever pressed on the hand or forearm with more than 10 N, the score is 0.
+- **Safety, two limits, both checked after every physics step; breaking either at any moment scores 0:**
+  - **Load on the hand, 5 N:** the net force on the hand and forearm from everything outside them (the robot
+    touching them, and the block pushed or pulled against them while they hold it), as a force sensor between the
+    hand and its support reads it. The hand's own pinch is internal and does not count. A clean handover peaks at
+    about 1.6 N, while the robot closes its grip; `push` (the block shoved into the hand) reaches 7.5 N.
+  - **Robot contact on the hand, 10 N:** the robot's links pressing on the hand or forearm, summed over the links
+    (fingertips squeezing a finger from both sides add up, they do not cancel; a single force sensor would miss
+    that).
 - **Snatched:** if the block left the hand before the hand let go (pulled out, or knocked out), there was no
   handover: the score is 0.
 - **Dropped:** if the block fell with nothing holding it at any point, the score is capped at 0.25.
@@ -78,28 +85,37 @@ At the end of the episode:
   pressing a block straight down does not move it.
 - **Still:** under 10 mm/s and 0.5 rad/s, from the block's pose change over the last control step.
 
-In a real trial the hand is a prop hand and forearm on a force gauge (or a person's hand in a pressure-sensing
-glove), and the person lets go when they feel a firm grip; the latch and rail conditions are measured with a ruler, a
-feeler gauge and a photo, as in the companion terminal-block task.
+In a real trial the hand is an instrumented prop, not a person:
+
+- **The prop:** a rigid hand and forearm (rubber-skinned, 30 cm forearm), its thumb a sprung clamp that pinches the
+  block with about 3 N. It is mounted on a sprung slide (about 1.5 N/mm along each axis, standing in for a person's
+  arm giving way) through a 6-axis force/torque sensor, so the sensor carries every force on the hand and forearm
+  from outside: the robot's touch, and the block pushed or pulled against the pinch or the palm. The pinch itself is
+  internal to the prop and does not load the sensor. Thin pressure-sensing film covers the finger and thumb pads and
+  the top of the forearm.
+- **Procedure:** zero the sensor with the block in the pinch and the prop at its offer point. Record the sensor's
+  force magnitude and the film's total force at 200 Hz or more through the whole trial. An operator watching the
+  gripper opens the thumb (a button) once both robot fingertips have closed on the block, and withdraws the prop.
+  The trial scores 0 if the sensor ever reads more than 5 N or the film more than 10 N.
+- The latch and rail conditions are measured with a ruler, a feeler gauge and a photo, as in the companion
+  terminal-block task.
 
 ## Measured results
 
-Physics at 240 Hz on GPU (`cuda:0`), 20 Hz control, object jitter 0, run limit 1,200 steps.
-
 | variant | what the arms do | score | notes |
 | --- | --- | --- | --- |
-| `full` | left arm holds the rail; right arm takes the block, presses it on | **1.0** (success) | robot-hand contact 0 N throughout; gripped at step 147 (11.5 N per fingertip), the hand let go at step 157; latched, success at step 394; tilt 0.2 degrees, rail moved under 0.01 mm |
-| `no_press` | taken cleanly, set on the rail, never pressed | **0.5** | resting on its lead-ins 4.7-4.9 mm above the lips |
-| `drop` | taken cleanly, then let go of over the table | **0.25** | dropped at step 226 |
-| `snatch` | closes fast and pulls away at once | **0** | the block left the hand at step 137, 3 steps after the grip, before the hand let go |
-| `rough` | presses down on the forearm with closed fingertips first | **0** | 17.4 N on the forearm at step 104 |
-| `one_arm` | the full right-arm script, the rail not held | **1.0** | success at step 394; the rail moved 0.009 mm at most |
+| `full` | left arm holds the rail; right arm takes the block, presses it on | **1.0** (success at step 435) | gripped at step 147, the hand let go at step 157; the robot never touched the hand (0 N); load on the hand 1.6 N at most (while the grip closes); latched, then released, success at step 435; the rail moved 0.016 mm |
+| `no_press` | taken cleanly, set on the rail, never pressed | **0.5** | resting on its lead-ins, not latched |
+| `drop` | taken cleanly, then let go of over the table | **0.25** | dropped |
+| `snatch` | closes fast and pulls away at once | **0** | the block left the hand before the hand let go (snatched) |
+| `rough` | presses down on the forearm with closed fingertips first | **0** | 17.4 N of robot contact on the forearm |
+| `push` | grips, then shoves the block toward the palm before the hand lets go | **0** | load on the hand 7.5 N (limit 5 N) at step 139, through the block: the robot's own contact with the hand stayed at 4.9 N (limit 10 N) and the block was not snatched |
+| `one_arm` | the full right-arm script, the rail not held | **1.0** | success at step 437 (CPU) |
 
-With CPU physics (`--device cpu`) the six variants score the same (1.0, 0.5, 0.25, 0, 0, 1.0); there the block rolled
-in the grip during the press, clicked on one side, and the finishing press clicked the other (success at step 615).
-
-Success registers while the gripper is still pressing the latched block (the scorer cannot tell whether a hand is
-touching it); in the demo the gripper lets go right after, and the block stays latched.
+Physics at 240 Hz on GPU (`cuda:0`) for `full` and `push`; all seven variants were also run with CPU physics
+(`--device cpu`) and score the same (1.0, 0.5, 0.25, 0, 0, 0, 1.0): `full` succeeds at step 648 there (the block rolled
+in the grip during the press, clicked on one side, and a finishing press clicked the other), and `push` loads the
+hand with 29 N (robot contact 5.3 N). 20 Hz control, object jitter 0, run limit 1,200 steps.
 
 ## How it is built
 
@@ -110,10 +126,13 @@ and no per-step hook. `tb_parts.py` is the task's own minimal mechanism; nothing
   `yam_arena.scene.task_object` and `object_states` the moment that module is imported. Parts are spawned from USD
   files written to a temporary folder. `object_states` runs once per control step (the scorer calls it after every
   step); the wrapper runs the hand's script and measurements there, then reports its state to the scorer.
-- The rail (loose, 150 g, steel friction 0.3, 2 mm lips, two end brackets and a mounted beige block) and the WDU
-  2.5-style block with its sprung latch (clicks on at about 5 N; slides at about 2 N latched) are the same parts as in
+- The rail (loose, 150 g, steel friction 0.3, 2 mm lips, two end brackets and a mounted beige block) and the
+  block (this task's own generic screw-clamp design) with its sprung latch (clicks on at about 5 N; slides at about 2 N latched) are the same parts as in
   the terminal-block task.
-- The hand's contacts are read through PhysX contact views. Isaac Lab switches PhysX contact processing off unless a
+- The hand's contacts are read through PhysX contact views: its two bodies against every robot link (the robot's
+  contact, and with the block's contacts, the load), and the block against the robot's fingertips (the grip the hand
+  waits for). The load is the vector sum of every external contact force on the hand, so the hand's own pinch, equal
+  and opposite through the block, cancels. Isaac Lab switches PhysX contact processing off unless a
   contact sensor is in the scene, so the hand switches it back on when it is built, as Isaac Lab's own sensor does.
 - On every reset the hand's joints are put back to the start together with the block (the environment's reset puts
   objects back but not this hand's joints), and the thumb is squeezing before the reset's settle steps run, so the
@@ -133,15 +152,20 @@ thumb. Then it moves away.
 
 Variants: `no_press` sets the block on the rail without pressing it; `drop` opens the gripper over the table after
 the handover; `snatch` closes fast and pulls away at once, before the hand lets go; `rough` first presses down on the
-forearm with closed fingertips; `one_arm` runs the full right-arm script without holding the rail.
+forearm with closed fingertips; `push` grips the block, then shoves it toward the palm (the command 55 mm ahead) before
+the hand lets go, touching the hand only lightly but driving the block into it; `one_arm` runs the full right-arm
+script without holding the rail.
+
+## Assets
+
+No third-party assets: the hand, the rail, the brackets and the terminal blocks are this task's own geometry, built in
+code (`hand.py`, `tb_parts.py`); no meshes, scans or CAD files are used.
 
 ## Fidelity: what is simplified
 
 - The hand is rigid boxes on sprung slides: no fingers that move apart from the thumb, no wrist rotation, and a
   fixed script that reacts only to the robot's grip. Its compliance (1.5 N/mm) and pinch (2.8 N) are round numbers,
   not measurements.
-- The 10 N limit applies to contact with the hand and forearm; force passed through the block while both hold it
-  (a tug) is not counted, but pulling the block out before the hand lets go is (snatched).
 - The rail and block carry the companion task's simplifications: 2 mm lips (1 mm on a real rail), a spring stand-in
   for the latch's plastic flexures with enlarged features, about 5 N to click on (likely below a real block's snap-on
   force, which was not measured), joint armature on the latch parts, the block's velocity from its pose change.
@@ -153,11 +177,10 @@ forearm with closed fingertips; `one_arm` runs the full right-arm script without
 - The press is the delicate step: gripped near its top, the block can roll between the fingertips while being
   pressed and click on one side only; the demo then finishes with a fingertip press on the other side.
 - A two-finger grip near the block's top leaves little room: the person's fingertip pads are 2.5 mm below the robot's
-  pad tips. A policy that grips lower touches the person's fingers (counted against the 10 N limit, gently is fine).
+  pad tips. A policy that grips lower touches the person's fingers (counted against the 10 N contact and 5 N load limits; gently is fine).
 - `tb_parts.install()` wraps two functions of `yam_arena.scene` and the hand reads PhysX through Isaac Lab internals
   (contact views, a post-physics-step callback, its articulation class); a yam_arena or Isaac Lab update that changes
   them stops the task with an error.
 - Object jitter must be 0: the block must start in the hand's pinch.
 - Dream-1, run with the command above (and `--policy dream -E cam_width=320 -E cam_height=176`), scored 0.0: in
   1,200 steps its arms never reached for the block, which the hand held out the whole time.
-- The scorer cannot see whether the robot is still touching the block when it counts success.

@@ -9,13 +9,13 @@ length pointing at the robot. Over 3 s the hand brings it to about 0.35 m in fro
 table, and holds it there, drifting by a few millimetres as a person does. The hand lets go only once the robot is
 gripping the block firmly (both fingertips, for about 0.3 s), then withdraws. It never lets go otherwise.
 
-A terminal block is shaped like a WDU 2.5 feed-through terminal: 5.1 mm thick, 60 mm long, 46 mm tall (39.5 mm
+A terminal block is a screw-clamp feed-through terminal block: 5.1 mm thick, 60 mm long, 46 mm tall (39.5 mm
 above the rail when mounted). At each end of its base is a spring foot that clicks under the rail's lips when the
 block is pressed straight down onto the rail (about 5 N); a block just set on the rail rests on its feet about 4.5
 mm high and is not latched.
 
 Task: take the block from the person's hand and mount it on the rail. Grip it while the hand still holds it, so
-the hand can let go; do not snatch it, drop it, or press on the hand. Then press the block straight down onto the rail
+the hand can let go; do not snatch it, drop it, press on the hand, or push or pull the block against the hand. Then press the block straight down onto the rail
 anywhere between the beige block and the right bracket until it clicks. Do not knock the rail out of place: moving it
 1 cm or turning it 3 degrees spoils the mount (the other arm may hold it down).
 """
@@ -59,7 +59,11 @@ OBJECTS = [
 ]
 
 # -- scoring thresholds ----------------------------------------------------------------------------------------
-SAFE_CONTACT_N = 10.0  # the robot may never press on the hand harder than this (any link, any moment)
+SAFE_CONTACT_N = 10.0  # the robot may never press on the hand harder than this (summed over its links, any moment)
+RELEASED_N = 0.1  # success needs the block released: all robot fingertips on it together under this (N)
+SAFE_LOAD_N = 5.0  # the net force on the hand from the robot and the block together may never exceed this: what a force
+# sensor between the prop hand and its stand reads (the hand's own pinch is internal and does not count). A clean
+# handover peaks at about 1.6 N, while the robot grips
 RAIL_MAX_SHIFT = 10 * MM  # the rail's centre may move less than this from where it started ...
 RAIL_MAX_TURN_DEG = 3.0  # ... and turn less than this
 SEAT_RANGE = (-0.5 * MM, 0.8 * MM)  # the base above the lip tops at each lip edge: seated (latched: 0.3 mm)
@@ -155,8 +159,10 @@ def handed_over(h) -> bool:
 
 
 def safe(h) -> bool:
-    """The robot never pressed on the hand with more than 10 N (checked after every physics step)."""
-    return h.peak_contact_n <= SAFE_CONTACT_N
+    """Checked after every physics step: the robot never pressed on the hand with more than 10 N, and the load on the
+    hand (the net force on it from the robot and the block, including anything pushed or pulled through the block)
+    never exceeded 5 N."""
+    return h.peak_contact_n <= SAFE_CONTACT_N and h.peak_load_n <= SAFE_LOAD_N
 
 
 def stage(objects) -> str | None:
@@ -172,15 +178,18 @@ def stage(objects) -> str | None:
 
 
 def success(objects) -> bool:
-    """Handed over safely and never dropped, then latched on the rail and still (held 1 s), the rail in place."""
+    """Handed over safely and never dropped, then latched on the rail, released (no robot fingertip on it) and still,
+    held 1 s, the rail in place."""
     h = objects["hand"]
-    return bool(stage(objects) == "latched" and not h.dropped and rail_ok(objects) and objects["block"].resting())
+    released = h.touch_n < RELEASED_N
+    return bool(stage(objects) == "latched" and released and not h.dropped and rail_ok(objects)
+                and objects["block"].resting())
 
 
 def score(objects) -> float:
     """Partial credit at the end of the episode (success scores 1.0): 0.75 latched, 0.5 resting on the rail, 0.25
-    handed over cleanly; 0 if the robot pressed on the hand with more than 10 N or took the block without the hand
-    letting go. Capped at 0.25 if the block was dropped or the rail moved 1 cm or turned 3 degrees."""
+    handed over cleanly; 0 if the robot pressed on the hand with more than 10 N, loaded the hand with more than 5 N
+    (directly or through the block), or took the block without the hand letting go. Capped at 0.25 if the block was dropped or the rail moved 1 cm or turned 3 degrees."""
     st = stage(objects)
     credit = CREDIT.get(st, 0.0)
     if objects["hand"].dropped or not rail_ok(objects):

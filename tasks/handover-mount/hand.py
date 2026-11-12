@@ -20,7 +20,9 @@ Script (one control step at a time, from the task's ``object_states`` hook, see 
 If the robot never grips the block, the hand keeps offering it for the whole episode.
 
 Measured for the scorer, every control step (see :class:`HandState`): the largest contact force between the robot
-and the hand so far, whether the hand let go into a robot grip, and whether the block was dropped.
+and the hand so far, the largest load on the hand so far (the net force on it from the robot and the block, as a
+force sensor between the hand and its support reads it), whether the hand let go into a robot grip, and whether the
+block was dropped. Both forces are checked after every physics step.
 """
 
 from __future__ import annotations
@@ -238,8 +240,11 @@ class HandState(task_file.ObjectState):
     phase: str = "reach"
     released: bool = False  # the hand let go of the block into a robot grip
     peak_contact_n: float = 0.0  # the largest robot-hand contact force so far (N)
+    peak_load_n: float = 0.0  # the largest load on the hand so far (N): the net force on it from the robot and the block
+    load_n: float = 0.0  # this step's load on the hand (N)
     contact_n: float = 0.0  # this step's robot-hand contact force (N)
     grip_n: tuple[float, float] = (0.0, 0.0)  # each robot fingertip pressing the block now (N)
+    touch_n: float = 0.0  # all robot fingertips on the block now, added up (N): 0 once the robot has let go
     snatched: bool = False  # the block left the hand before the hand let go (pulled or knocked out)
     dropped: bool = False  # the block fell (faster than 0.25 m/s) with nothing holding it
 
@@ -258,6 +263,10 @@ class _Run:
     views: object = None
     callback: object = None  # the per-physics-step handle (kept alive here)
     substep_peak: float = 0.0  # the largest robot-hand force over the physics steps since the last control step
+    load_substep_peak: float = 0.0  # the largest load on the hand over the physics steps since the last control step
+    load: float = 0.0
+    load_peak: float = 0.0
+    touch: float = 0.0
     substeps: int = 0
     last_substeps: int = 0
     held_offset: np.ndarray | None = None  # the block's centre relative to the pinch while the hand holds it
@@ -295,7 +304,24 @@ def _views(base, name: str):
     tips = [next(p for p in links(r) if p.endswith("/" + n)) for r in CONFIG["robots"] for n in CONFIG["fingers"]]
     block_view = sim_view.create_rigid_contact_view([f"{block_root}/body"], filter_patterns=[tips],
                                                     max_contact_data_count=64)
-    return hand_view, block_view
+    # hand bodies against every link of the held block: the force the block puts on the hand
+    block_links = [f"{block_root}/{b}" for b in ("body", "foot_p", "foot_n", "pad_p", "pad_n")]
+    load_view = sim_view.create_rigid_contact_view([f"{hand_root}/arm", f"{hand_root}/thumb"],
+                                                   filter_patterns=[block_links, block_links],
+                                                   max_contact_data_count=256)
+    return hand_view, block_view, load_view
+
+
+def _forces(run, dt) -> tuple[float, float]:
+    """(direct, load) in N. direct: the robot pressing on the hand, the sum over hand bodies and robot links of each
+    pair's force (two fingertips squeezing from opposite sides add up, they do not cancel). load: the net force on
+    the hand from everything outside it, the robot and the held block together: what a force sensor between the hand
+    and its support reads. The hand's own pinch (thumb against finger, through the block) is internal and cancels."""
+    robot = _matrix(run.views[0], dt)
+    block = _matrix(run.views[2], dt)
+    direct = float(np.linalg.norm(robot.reshape(-1, 3), axis=1).sum())
+    load = float(np.linalg.norm(robot.sum(axis=(0, 1)) + block.sum(axis=(0, 1))))
+    return direct, load
 
 
 def _matrix(view, dt) -> np.ndarray:
@@ -318,8 +344,9 @@ def _watch_every_physics_step(base, name: str):
         run = _RUNS.get(name)
         if run is None or run.views is None:
             return
-        f = float(np.linalg.norm(_matrix(run.views[0], float(base.physics_dt)).sum(axis=(0, 1))))
+        f, load = _forces(run, float(base.physics_dt))
         run.substep_peak = max(run.substep_peak, f)
+        run.load_substep_peak = max(run.load_substep_peak, load)
         run.substeps += 1
 
     return base.sim.physics_manager.register_callback(on_step, IsaacEvents.POST_PHYSICS_STEP, wrap_weak_ref=False)
@@ -345,18 +372,24 @@ def update(base, name: str, states: dict) -> None:
     if run.views is None:
         run.views = _views(base, name)
         run.callback = _watch_every_physics_step(base, name)
-    hand_view, block_view = run.views
+    hand_view, block_view, _ = run.views
     dt = float(base.physics_dt)
-    # the robot-hand force: the largest over every physics step since the last control step (a knock between two
-    # control steps counts), falling back to this step's reading if the per-step callback is not running
-    now = float(np.linalg.norm(_matrix(hand_view, dt).sum(axis=(0, 1))))
+    # the robot-hand force and the load on the hand: the largest over every physics step since the last control step
+    # (a knock between two control steps counts), falling back to this step's reading if the per-step callback is not
+    # running
+    now, load_now = _forces(run, dt)
     contact = max(now, run.substep_peak) if step > 0 else 0.0
+    load = max(load_now, run.load_substep_peak) if step > 0 else 0.0
     run.last_substeps, run.substep_peak, run.substeps = run.substeps, 0.0, 0
+    run.load_substep_peak = 0.0
+    run.load = load
+    run.load_peak = max(run.load_peak, load)
     grip_m = _matrix(block_view, dt)[0] if step > 0 else np.zeros((2 * len(CONFIG["robots"]), 3))
     run.contact = contact
     run.peak = max(run.peak, contact)
     tips = np.linalg.norm(grip_m, axis=1).reshape(-1, 2)  # per robot: its two fingertips on the block (N)
     run.grip = tuple(float(v) for v in tips[int(np.argmax(tips.min(axis=1)))])
+    run.touch = float(tips.sum())  # every robot fingertip on the block, added up
 
     # where the block is: still in the hand, gripped by the robot, or falling with nothing holding it
     pinch = hand.data.body_pose_w.torch[0, list(hand.body_names).index("arm"), :3].detach().cpu().numpy()
@@ -415,4 +448,5 @@ def state(base, name: str) -> HandState:
     return HandState(pos=pos, quat_xyzw=pose[3:], lin_vel=np.zeros(3), ang_vel=np.zeros(3),
                      low=pos + np.array(lo), high=pos + np.array(hi), phase=run.phase, released=run.released,
                      peak_contact_n=run.peak, contact_n=run.contact, grip_n=run.grip, snatched=run.snatched,
+                     peak_load_n=run.load_peak, load_n=run.load, touch_n=run.touch,
                      dropped=run.dropped)
