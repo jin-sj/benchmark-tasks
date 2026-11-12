@@ -2,6 +2,7 @@
 
     python demo.py                    # right arm flips the second lever open with one fingertip: 1.0
     python demo.py --variant hold     # no arm moves: every lever stays closed (0.0)
+    python demo.py --variant reclose  # opens the leftmost lever, closes it again, then opens the second: 0.0
     python demo.py --device cpu       # CPU physics, ~3x faster, for quick checks
 
 It drives the ``yam_arena`` embodiment directly (20 Hz control, object_jitter 0, as a trial runs) and reads the
@@ -34,7 +35,7 @@ TASK = HERE / "task.py"
 INSTRUCTION = (
     "Open the disconnect lever of the second terminal block from the left, and leave the other four levers closed."
 )
-VARIANTS = ("full", "hold")
+VARIANTS = ("full", "hold", "reclose")
 CAMERAS = ("top_cam", "left_cam", "right_cam")
 CONTROL_HZ = 20.0
 DT = 1.0 / CONTROL_HZ
@@ -49,6 +50,7 @@ FINGER_SIDE = -1  # which finger pushes: -1 the one on the gripper's -y side (th
 TIP_BELOW_TAB = 4.0 * MM  # the fingertip's end this far below the tab's top
 START_GAP = 6 * MM  # the fingertip starts this far short of the tab
 PUSH_RATE, PUSH_MAX = 15 * MM, 60 * MM  # the push command advances this fast, at most this far
+CLOSE_AT = 9 * MM  # closing an upright lever: the fingertip's end this far above the hinge (clear of a closed tab)
 AFTER_SUCCESS_S = 3.0
 
 
@@ -178,35 +180,63 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         off = FINGER_SIDE * (GRIP * 0.094 / 2 + FINGER_THICK / 2)
         return np.asarray(point, dtype=float) + np.array([0.0, -off, PAD_TIP])
 
-    # -- right arm: flip the lever with one fingertip ------------------------------------------------------
+    so = np.asarray(task.STRIP_ORIGIN, dtype=float)
+    tab_x = so[0] + dc.PIVOT[0] - dc.ARM[0]  # a closed lever's tab: its near face ...
+    tab_top = so[2] + dc.PIVOT[1] + dc.ARM[1] / 2 + dc.TAB[1]  # ... and its top
+
+    def approach(arm, start, label):
+        yield from move(arm, start + (0, 0, 0.04), 2.0, grip=GRIP, rot=arm.down, label=label)
+        yield from move(arm, start + (0, 0, 0.012), 1.2, label="down near it")
+        yield from settle(arm, start + (0, 0, 0.012), 0.6, "line up")
+        corr = arm.pos - (start + (0, 0, 0.012))
+        yield from move(arm, start + corr, 0.6, label="down beside it")
+        yield from settle(arm, start, 0.5, "line up")
+
+    def push_until(arm, direction, done, label):
+        """Push along ``direction`` (world x, +1 away from the arms), the command leading, until ``done()``."""
+        base_pos, lead = arm.pos.copy(), 0.0
+        phase["right"] = label
+        for _ in range(round(8.0 / DT)):
+            if done():
+                break
+            lead = min(lead + PUSH_RATE * DT, PUSH_MAX)
+            arm.pos = base_pos + np.array([direction * lead, 0.0, 0.0])
+            yield
+        return lead
+
+    def open_lever(arm, i):
+        """Push lever i's tab away from the arms until the lever has snapped open."""
+        y = so[1] + dc.block_y(i)
+        start = finger_tcp((tab_x - START_GAP - FINGER_HALF_X, y, tab_top - TIP_BELOW_TAB))
+        yield from approach(arm, start, f"over lever {i + 1}")
+        lead = yield from push_until(arm, +1, lambda: angles()[i] >= task.OPEN_DEG, f"open lever {i + 1}")
+        report.setdefault("opened", []).append({"lever": i + 1, "step": world["step"], "lead_mm": round(lead / MM, 1)})
+        arm.pos = measured_tcp(arm.side)[0].copy()
+        yield from move(arm, arm.pos + (-0.015, 0, 0.0), 0.6, label="back off")
+        yield from move(arm, arm.pos + (0, 0, 0.05), 1.2, label="lift away")
+
+    def close_lever(arm, i):
+        """Push upright lever i's upper end toward the arms until it has snapped closed."""
+        y = so[1] + dc.block_y(i)
+        far_face = so[0] + dc.PIVOT[0] + dc.ARM[1] / 2 + 1.5 * MM  # the upright lever's far face (it leans 5 degrees)
+        start = finger_tcp((far_face + START_GAP + FINGER_HALF_X, y, so[2] + dc.PIVOT[1] + CLOSE_AT))
+        yield from approach(arm, start, f"beyond lever {i + 1}")
+        lead = yield from push_until(arm, -1, lambda: angles()[i] <= 5.0, f"close lever {i + 1}")
+        report.setdefault("closed", []).append({"lever": i + 1, "step": world["step"], "lead_mm": round(lead / MM, 1)})
+        arm.pos = measured_tcp(arm.side)[0].copy()
+        yield from move(arm, arm.pos + (0.015, 0, 0.0), 0.6, label="back off")
+        yield from move(arm, arm.pos + (0, 0, 0.05), 1.2, label="lift away")
+
+    # -- right arm ---------------------------------------------------------------------------------------------
     def right_script():
         arm = arms["right"]
         if variant == "hold":
             phase["right"] = "idle"
             yield from idle()
-        so = np.asarray(task.STRIP_ORIGIN, dtype=float)
-        tab_x = so[0] + dc.PIVOT[0] - dc.ARM[0]  # the tab's near face
-        tab_top = so[2] + dc.PIVOT[1] + dc.ARM[1] / 2 + dc.TAB[1]
-        y = so[1] + dc.block_y(task.TARGET)
-        start = finger_tcp((tab_x - START_GAP - FINGER_HALF_X, y, tab_top - TIP_BELOW_TAB))
-        yield from move(arm, start + (0, 0, 0.06), 2.5, grip=GRIP, rot=arm.down, label="over the lever")
-        yield from move(arm, start + (0, 0, 0.012), 1.2, label="down near it")
-        yield from settle(arm, start + (0, 0, 0.012), 0.6, "line up")
-        corr = arm.pos - (start + (0, 0, 0.012))
-        yield from move(arm, start + corr, 0.6, label="down beside the tab")
-        yield from settle(arm, start, 0.5, "line up")
-        base_pos = arm.pos.copy()
-        phase["right"] = "push the tab"
-        lead = 0.0
-        for _ in range(round(8.0 / DT)):
-            if angles()[task.TARGET] >= task.OPEN_DEG:
-                break
-            lead = min(lead + PUSH_RATE * DT, PUSH_MAX)
-            arm.pos = base_pos + np.array([lead, 0.0, 0.0])
-            yield
-        report["open_step"], report["push_lead_mm"] = world["step"], round(lead / MM, 1)
-        yield from move(arm, arm.pos + (-0.015, 0, 0.0), 0.6, label="back off")
-        yield from move(arm, arm.pos + (0, 0, 0.06), 1.2, label="lift away")
+        if variant == "reclose":  # the leftmost lever opened and closed again first: its circuit was interrupted
+            yield from open_lever(arm, 0)
+            yield from close_lever(arm, 0)
+        yield from open_lever(arm, task.TARGET)
         phase["right"] = "done"
         report["script_done_step"] = world["step"]
         yield from idle()
@@ -230,7 +260,9 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         world["states"] = object_states(emb._env, emb.task.names)
         st = world["states"]
         row = {"step": step, "left": phase["left"], "right": phase["right"], "score": res.info.get("score"),
-               "success": res.info.get("success"), "levers_deg": [round(a, 1) for a in angles()]}
+               "success": res.info.get("success"), "levers_deg": [round(a, 1) for a in angles()],
+               "levers_max_deg": [round(a, 1) for a in world["states"]["strip"].levers_max_deg],
+               "target_open_s": round(world["states"]["strip"].levers_open_s[task.TARGET], 2)}
         for side in ("left", "right"):
             row[f"{side[0]}_cmd"] = [round(float(v), 4) for v in arms[side].pos]
             row[f"{side[0]}_meas"] = [round(float(v), 4) for v in measured_tcp(side)[0]]

@@ -1,4 +1,4 @@
-"""The task's own parts: a TS35 DIN rail assembly, WDU 2.5-style terminal blocks with sprung feet, and a parts tray.
+"""The task's own parts: a TS35 DIN rail assembly, generic terminal blocks with sprung feet, and a parts tray.
 
 yam_arena task files support single primitives and library assets only, and yam_arena has no extension point
 for multi-shape or jointed parts. This module is the task's own minimal mechanism, kept in the task folder:
@@ -15,12 +15,12 @@ The parts (dimensions in mm in the comments, metres in code):
   lips (thickened so a pressed tooth cannot tunnel through them at 240 Hz), lip outer edges at +-17.5 from the
   centreline. Fixed to it: an end bracket near each end and a beige terminal block
   mounted against the left bracket.
-- block (an articulation of five bodies: housing, two feet, two seat pads): a terminal block shaped like a Weidmueller WDU 2.5 feed-through
-  terminal: 5.1 thick, 60 long across the rail, 46.25 tall from the bottom of its feet (39.5 above the rail).
-  Its outline, screw shafts, wire entries, cross-connection channel and feet follow the manufacturer's
-  catalogue drawing and CAD, simplified to about 0.5 mm and coded below as plain coordinates (no CAD file is
-  read). Each foot is its own link on a prismatic joint across the rail, sprung inward by a joint drive: a
-  stand-in for the real foot's plastic flexure beams.
+- block (an articulation of five bodies: housing, two feet, two seat pads): a generic terminal block of this
+  project's own design, in two models. "SYM": a screw-clamp feed-through block with a sprung foot at each end,
+  5.1 thick, 60 long across the rail, 46.25 tall from the bottom of its feet (39.5 above the rail). "HOOK": a
+  push-in block with a fixed hook at one end and a sprung foot at the other, 5.1 thick, 65 long, 36 tall. Their
+  outlines are simple polygons coded below as plain coordinates. Each sprung foot is its own link on a prismatic
+  joint across the rail, sprung inward by a joint drive: a stand-in for a real foot's plastic flexure beams.
 - tray (a fixed collider): an open tray with low walls and no slots.
 
 The latch (a spring hack, not a flexure model), all flat-on-flat contacts, which PhysX resolves exactly:
@@ -73,65 +73,54 @@ BRACKET_HALF_X = 22.0 * MM  # at the base; 12 mm at the top
 BRACKET_TOP = 45.0 * MM
 HOLD_Y = 105.0 * MM  # where the left arm presses the rail (in the stub, 36 mm from the mounted block)
 
-# -- terminal block: WDU 2.5 outline --------------------------------------------------------------------------
-# Section coordinates are (across, up) in mm in the drawing frame: across 0..60 over the block's length, up from
-# the bottom of its feet. The rail's centreline is at across 32 (the terminal is 2 mm off-centre on the rail) and
-# the lip tops at up 6.76 when seated. Block frame: x = (across - 32) mm, z = (up - 6.76) mm.
+# -- terminal block: generic screw-clamp feed-through outline (this project's own design) ---------------------------
+# Section coordinates are (across, up) in mm in the design frame: across 0..60 over the block's length, up from the
+# bottom of its feet. The rail's centreline is at across 32 (the block sits 2 mm off-centre on the rail) and the lip
+# tops at up 6.76 when seated. Block frame: x = (across - 32) mm, z = (up - 6.76) mm.
 _ACROSS0, _UP0 = 32.0, 6.76
-# Housing outline (visual), counter-clockwise, from the drawing: wings, angled shoulders with their marker comb
-# serrations, the two screw shafts, the central cross-connection channel, the wire-entry steps and the release ledge.
+# Housing outline (visual), counter-clockwise: lower wings over the feet, the wire-entry steps, upper wings, two screw
+# shafts between posts, and a cross-connection channel in the middle.
 _HOUSING_OUTLINE = (
-    (16.4, 6.76), (47.5, 6.76), (47.5, 11.9), (49.0, 11.9), (49.4, 7.4), (56.8, 7.4), (57.9, 11.2), (59.9, 11.8),
-    (59.3, 12.9), (59.9, 14.8), (57.2, 17.8), (47.5, 22.4), (47.5, 26.3), (55.5, 31.8), (58.0, 36.2), (56.7, 37.1),
-    (55.2, 35.8), (54.1, 37.3), (55.4, 38.4), (54.5, 39.3), (53.0, 38.0), (51.9, 39.0), (53.2, 40.5), (52.4, 41.4),
-    (51.2, 40.2), (49.7, 41.2), (51.0, 42.8), (50.1, 43.7), (48.6, 42.3), (47.5, 43.4), (48.8, 44.9), (48.5, 46.2),
-    (45.5, 46.2), (45.5, 38.7), (41.5, 38.7), (41.5, 46.2), (40.2, 45.7), (40.0, 37.7), (36.4, 34.1), (36.4, 27.8),
-    (27.6, 27.8), (27.6, 34.1), (24.0, 37.7), (23.8, 45.7), (22.5, 46.2), (22.5, 38.7), (18.5, 38.7), (18.5, 46.2),
-    (15.8, 46.2), (15.2, 44.9), (16.5, 43.4), (15.0, 42.3), (13.8, 43.6), (13.0, 42.7), (14.3, 41.2), (13.2, 40.2),
-    (11.6, 41.4), (10.8, 40.6), (12.1, 39.0), (10.6, 38.0), (9.4, 39.2), (8.6, 38.4), (9.9, 36.8), (8.8, 35.8),
-    (7.3, 37.1), (6.0, 36.3), (8.5, 31.8), (16.5, 26.3), (16.5, 22.4), (6.8, 17.8), (4.1, 14.7), (4.8, 12.9),
-    (0.6, 12.9), (0.0, 12.0), (3.8, 10.8), (4.8, 7.4), (14.6, 7.4), (14.5, 11.5), (15.5, 11.9),
+    (17.0, 6.76), (47.0, 6.76), (47.0, 12.0), (58.0, 12.0), (58.0, 20.0), (47.0, 22.4), (47.0, 26.3), (55.0, 33.0),
+    (55.0, 37.7), (49.0, 37.7), (49.0, 46.25), (44.0, 46.25), (44.0, 38.7), (41.0, 38.7), (41.0, 46.25), (39.0, 46.25),
+    (39.0, 37.7), (36.0, 34.7), (36.0, 29.0), (28.0, 29.0), (28.0, 34.7), (25.0, 37.7), (25.0, 46.25), (23.0, 46.25),
+    (23.0, 38.7), (20.0, 38.7), (20.0, 46.25), (15.0, 46.25), (15.0, 37.7), (9.0, 37.7), (9.0, 33.0), (17.0, 26.3),
+    (17.0, 22.4), (6.0, 20.0), (6.0, 12.0), (17.0, 12.0),
 )
-# Housing collision: convex pieces covering the outline (comb serrations, ledge and fillets smoothed). Every piece
-# is at least 1 mm thick so PhysX does not inflate it.
+# Housing collision: convex pieces covering the outline, each at least 1 mm thick so PhysX does not inflate it.
 _HOUSING_HULLS = (
-    ((16.5, 6.76), (47.5, 6.76), (47.5, 26.3), (16.5, 26.3)),  # body, up to the wire entries
-    ((0.0, 11.9), (16.4, 11.9), (16.4, 22.4), (6.8, 17.8), (0.6, 12.9)),  # left lower wing
-    ((47.5, 11.9), (59.9, 11.9), (59.9, 14.8), (57.2, 17.8), (47.5, 22.4)),  # right lower wing
-    ((8.5, 31.8), (16.5, 26.3), (16.5, 37.7), (7.4, 37.7), (6.0, 36.3)),  # left upper wing
-    ((16.5, 26.3), (27.6, 26.3), (27.6, 34.1), (24.0, 37.7), (16.5, 37.7)),  # left shoulder
-    ((7.4, 37.7), (18.5, 37.7), (18.5, 46.2), (15.8, 46.2)),  # left outer post (with the comb)
-    ((18.5, 37.7), (24.0, 37.7), (24.0, 38.7), (18.5, 38.7)),  # left screw shaft floor
-    ((22.5, 38.7), (24.0, 38.7), (24.0, 45.7), (22.5, 46.2)),  # left inner post
-    ((27.6, 26.3), (36.4, 26.3), (36.4, 27.8), (27.6, 27.8)),  # floor of the cross-connection channel
-    ((55.5, 31.8), (58.0, 36.3), (56.6, 37.7), (47.5, 37.7), (47.5, 26.3)),  # right upper wing
-    ((36.4, 26.3), (47.5, 26.3), (47.5, 37.7), (40.0, 37.7), (36.4, 34.1)),  # right shoulder
-    ((45.5, 37.7), (56.6, 37.7), (48.2, 46.2), (45.5, 46.2)),  # right outer post
-    ((40.0, 37.7), (45.5, 37.7), (45.5, 38.7), (40.0, 38.7)),  # right screw shaft floor
-    ((40.0, 38.7), (41.5, 38.7), (41.5, 46.2), (40.2, 45.7)),  # right inner post
+    ((17.0, 6.76), (47.0, 6.76), (47.0, 26.3), (17.0, 26.3)),  # body, up to the wire entries
+    ((6.0, 12.0), (17.0, 12.0), (17.0, 22.4), (6.0, 20.0)),  # left lower wing
+    ((47.0, 12.0), (58.0, 12.0), (58.0, 20.0), (47.0, 22.4)),  # right lower wing
+    ((9.0, 33.0), (17.0, 26.3), (17.0, 37.7), (9.0, 37.7)),  # left upper wing
+    ((17.0, 26.3), (28.0, 26.3), (28.0, 34.7), (25.0, 37.7), (17.0, 37.7)),  # left shoulder
+    ((15.0, 37.7), (20.0, 37.7), (20.0, 46.25), (15.0, 46.25)),  # left outer post
+    ((20.0, 37.7), (25.0, 37.7), (25.0, 38.7), (20.0, 38.7)),  # left screw shaft floor
+    ((23.0, 38.7), (25.0, 38.7), (25.0, 46.25), (23.0, 46.25)),  # left inner post
+    ((28.0, 26.3), (36.0, 26.3), (36.0, 29.0), (28.0, 29.0)),  # floor of the cross-connection channel
+    ((47.0, 26.3), (55.0, 33.0), (55.0, 37.7), (47.0, 37.7)),  # right upper wing
+    ((36.0, 26.3), (47.0, 26.3), (47.0, 37.7), (39.0, 37.7), (36.0, 34.7)),  # right shoulder
+    ((44.0, 37.7), (49.0, 37.7), (49.0, 46.25), (44.0, 46.25)),  # right outer post
+    ((39.0, 37.7), (44.0, 37.7), (44.0, 38.7), (39.0, 38.7)),  # right screw shaft floor
+    ((39.0, 38.7), (41.0, 38.7), (41.0, 46.25), (39.0, 46.25)),  # right inner post
 )
-_SCREWS = (20.5, 43.5)  # across: clamping screws in the shafts, heads on the shaft floor (up 38.7)
-_WIRE_ENTRIES = ((16.5, -1), (47.5, 1))  # across, facing: the vertical steps between the wings (up 22.4..26.3)
-# Openings through the section (looks only): the flexure loops above each foot, the cross-connection and test holes.
+_SCREWS = (22.5, 41.5)  # across: clamping screws in the shafts, heads on the shaft floor (up 38.7)
+_WIRE_ENTRIES = ((17.0, -1), (47.0, 1))  # across, facing: the vertical steps between the wings (up 22.4..26.3)
+# Openings through the section (looks only): a cross-connection hole and two test holes.
 _OPENINGS = (
-    ((5.1, 10.8), (7.0, 3.7), (13.4, 4.9), (13.7, 7.6), (13.3, 11.7), (12.0, 11.5), (11.9, 5.6), (9.9, 5.1),
-     (8.6, 6.8), (6.9, 10.7)),
-    ((50.4, 5.4), (50.8, 4.8), (54.9, 4.3), (56.7, 11.7), (55.1, 11.6), (54.0, 5.5), (53.5, 5.2), (52.1, 5.6),
-     (52.0, 11.5), (50.7, 11.8)),
-    ((10.6, 11.4), (8.4, 11.4), (8.0, 10.9), (9.1, 8.0), (10.3, 6.7), (10.9, 7.0), (11.0, 8.0)),
-    ((30.4, 14.9), (30.4, 13.3), (31.2, 12.4), (32.4, 12.3), (33.6, 13.2), (33.7, 14.8), (32.8, 15.7), (31.6, 15.8)),
-    ((8.6, 16.6), (8.1, 15.3), (9.4, 14.9), (9.9, 16.2)),
-    ((54.4, 15.0), (55.8, 15.1), (55.6, 16.5), (54.2, 16.4)),
+    ((30.5, 13.5), (33.5, 13.5), (33.5, 16.5), (30.5, 16.5)),
+    ((8.5, 15.0), (10.0, 15.0), (10.0, 16.5), (8.5, 16.5)),
+    ((54.0, 15.0), (55.5, 15.0), (55.5, 16.5), (54.0, 16.5)),
 )
 BLOCK_WIDTH = 5.1 * MM  # along the rail
 BLOCK_LENGTH = 60.0 * MM  # across the rail (x -32 .. +28 in the block frame)
 BLOCK_HEIGHT = (46.25 - _UP0) * MM  # above the lip tops: 39.5
-BLOCK_MASS = 0.0066  # housing; with both feet 7.6 g, the catalogue mass
+BLOCK_MASS = 0.0066  # housing; with both feet 7.6 g, a typical mass for a block this size
 FOOT_MASS = 0.0005
 
 # -- terminal block: feet (the latch hack) --------------------------------------------------------------------
 # One foot's section as (u, z) in mm, relaxed: u outward from the rail centreline, z up from the lip tops; the same
-# for both feet but for the release lever outside the hook (the drawing's left foot has a long one).
+# for both feet but for the release lever outside the hook (the -x foot has a long one).
 FOOT_SPRING = 1000.0  # N/m (1 N/mm) per foot, across the rail: the click
 PAD_SPRING = 3000.0  # N/m (3 N/mm) per seat pad, vertical: the clamp
 # A 0.5 g foot on these springs rings at ~250 Hz, above the 240 Hz physics rate, and the solver then lets parts
@@ -153,9 +142,9 @@ TIP_FLAT = 0.6  # mm: vertical face at the tip, between the chamfer and the lead
 ARM_PLAY = 0.3  # mm: a foot's arm stands this far outside the lip edge, which keeps the block centred
 FOOT_TRAVEL = 3.5 * MM  # across; the tooth clears the lip edge at 2.0 mm
 # Snap-off variant (None: both feet sprung across the rail, as above). A fixed hook on the +x side and, on the -x
-# side (the drawing's release-lever foot), a foot on a slide inclined this many degrees below horizontal, outward:
+# side (the release-lever foot), a foot on a slide inclined this many degrees below horizontal, outward:
 # pulling that end of the block up makes the lip push the tooth down, which drives the foot out along the slide
-# against its spring until the tooth slips off the lip. A real WDU needs a screwdriver in the lever here.
+# against its spring until the tooth slips off the lip. A real screw-clamp block needs a screwdriver in the lever here.
 SNAP_OFF_DEG: float | None = None
 # Screwdriver variant (FIXED_HOOK and RELEASE_SLOT): the real one-sided latch. The +x foot is a fixed hook; the -x foot
 # is the usual sprung slider, with a release slot at the block's near end: a screwdriver blade put in the slot and
@@ -189,9 +178,9 @@ def _foot_profile(side_lever: bool, reach: float | None = None, bottom: float = 
             (tip, top_z - TIP_CHAMFER - TIP_FLAT), (tip, top_z - TIP_CHAMFER))
     arm = ((wall, top_z), (out, top_z), (out, top), (wall, top))
     if side_lever:
-        outer = ((out, bottom), (29.6, -4.66), (31.2, -3.16), (30.4, -1.26), (27.2, 0.64), (out, top))
+        outer = ((out, bottom), (28.5, -5.2), (30.5, -3.5), (30.5, -1.5), (27.0, 0.9), (out, top))
     else:
-        outer = ((out, bottom), (26.9, -4.76), (27.6, -2.16), (24.8, 0.64), (out, top))
+        outer = ((out, bottom), (26.5, -5.0), (27.5, -2.5), (25.0, 0.9), (out, top))
     return {"hook": hook, "arm": arm, "outer": outer}
 
 
@@ -287,71 +276,74 @@ def _prism(body, look, material, profile, y0, y1, visible=True) -> Shape:
                  visible=visible)
 
 
-# Weidmueller A3C 2.5 (1521740000): its CAD's section at mid-thickness, simplified to ~0.3 mm, in mm, CAD frame
-# (across 0..65.64 from the sprung foot's end, up 0..36.15 from the feet). Rail: lip tops at up 7.05, lip edges at
-# across 11.1 and 46.1 (centre 28.6). The left foot is the sprung one (flexure), the right a fixed hook.
-_A3C_RAIL = (28.6, 7.05)  # (across, up) of the rail's centreline at the lip tops
-_A3C_BODY_LOOK = (
-    ((4.68, 12.40), (11.94, 12.40), (12.83, 12.45), (12.88, 12.40), (13.40, 12.40), (13.40, 7.03), (43.98, 6.78), (44.31, 7.69), (42.79, 8.48), (43.69, 12.26), (45.24, 12.45), (45.74, 11.95), (45.74, 7.34), (46.70, 6.96), (46.73, 6.03), (43.89, 4.62), (43.64, 0.62), (44.24, 0.13), (48.04, 1.00), (52.68, 12.39), (64.59, 12.45), (65.46, 12.95), (65.36, 26.27), (64.82, 26.48), (64.64, 28.06), (62.63, 28.04), (62.22, 32.47), (62.62, 32.95), (63.28, 32.58), (64.21, 32.94), (64.39, 35.73), (63.57, 36.15), (61.19, 36.15), (61.19, 29.45), (55.84, 29.45), (55.84, 36.15), (55.32, 36.15), (55.30, 34.25), (55.26, 34.30), (55.30, 36.05), (54.03, 35.20), (53.36, 35.99), (51.79, 36.05), (51.99, 34.25), (51.64, 34.25), (51.64, 36.15), (49.79, 36.15), (49.79, 30.39), (49.32, 29.45), (44.81, 29.44), (44.44, 29.57), (44.44, 36.15), (43.92, 36.15), (43.90, 34.25), (43.86, 34.30), (43.90, 36.05), (42.63, 35.20), (41.96, 35.99), (40.39, 36.05), (40.59, 34.25), (40.24, 34.25), (40.24, 36.15), (37.44, 35.58), (37.16, 34.62), (37.59, 33.99), (37.14, 33.55), (32.70, 33.58), (32.54, 35.58), (29.79, 36.11), (28.79, 28.20), (28.79, 17.85), (26.39, 17.85), (26.39, 28.20), (25.38, 36.15), (24.49, 36.15), (23.49, 28.20), (23.49, 17.85), (21.09, 17.85), (21.09, 28.20), (20.09, 36.11), (19.18, 36.15), (18.91, 35.63), (18.79, 30.65), (16.19, 30.65), (15.89, 36.15), (15.49, 36.15), (15.49, 34.25), (15.14, 34.25), (15.34, 36.05), (13.75, 35.98), (12.93, 35.20), (11.83, 36.05), (11.82, 34.25), (11.80, 36.15), (11.28, 36.15), (11.28, 29.45), (5.94, 29.45), (5.94, 36.15), (3.10, 36.04), (2.51, 34.83), (3.01, 34.53), (2.91, 32.94), (3.84, 32.58), (4.50, 32.95), (4.91, 32.47), (4.49, 28.04), (2.48, 28.06), (2.29, 26.46), (1.76, 26.27), (1.53, 13.43), (2.05, 12.57), (4.63, 12.45)),
+# Generic push-in terminal block with a fixed hook and a sprung foot (this project's own design), in mm, design frame
+# (across 0..65.6 from the sprung foot's end, up 0..36.15 from the feet). Rail: lip tops at up 7.05, lip edges at
+# across 11.1 and 46.1 (centre 28.6). The left foot is the sprung one, the right a fixed hook.
+_HOOK_RAIL = (28.6, 7.05)  # (across, up) of the rail's centreline at the lip tops
+_HOOK_BODY_LOOK = (
+    ((13.4, 7.05), (42.8, 7.05), (42.8, 12.4), (64.6, 12.4), (65.6, 13.4), (65.6, 25.5), (61.5, 25.5), (61.5, 29.0),
+     (57.0, 29.0), (57.0, 36.15), (45.0, 36.15), (45.0, 31.0), (41.0, 31.0), (41.0, 36.15), (34.5, 36.15),
+     (33.5, 34.0), (23.5, 34.0), (22.5, 36.15), (16.0, 36.15), (16.0, 31.0), (12.0, 31.0), (12.0, 36.15), (5.0, 36.15),
+     (5.0, 29.0), (1.6, 29.0), (1.6, 25.5), (0.8, 25.5), (0.8, 13.4), (1.8, 12.4), (13.4, 12.4)),
 )
-_A3C_FOOT_LOOK = (  # the sprung foot and its flexure, which move with the foot
-    ((0.08, 4.86), (0.32, 1.19), (1.29, 0.20), (9.36, 0.00), (11.41, 1.07), (12.87, 4.39), (12.85, 5.36), (12.15, 5.59), (11.62, 4.70), (10.72, 4.30), (9.43, 4.95), (9.95, 8.50), (11.18, 12.36), (11.94, 12.40), (4.68, 12.40), (5.13, 11.89), (3.30, 2.37), (1.90, 2.12), (1.41, 5.02), (0.71, 5.30)),
-    ((13.40, 7.03), (13.40, 12.40), (12.88, 12.40), (13.33, 11.90), (10.65, 7.75), (10.54, 5.10), (11.13, 5.84), (11.98, 6.00), (12.25, 7.04)),
+_HOOK_FOOT_LOOK = (  # the sprung foot and its flexure, which move with the foot
+    ((0.8, 0.0), (10.0, 0.0), (12.8, 4.0), (12.8, 5.4), (10.6, 5.4), (10.6, 12.4), (5.2, 12.4), (5.2, 5.4),
+     (0.8, 5.4)),
 )
-_A3C_HULLS = (  # collision: the housing as two boxes (upper body; the lower middle over the rail)
-    ((65.64, 12.40), (65.64, 36.15), (0.80, 36.15), (0.80, 12.40)),
-    ((42.80, 7.35), (42.80, 12.40), (13.40, 12.40), (13.40, 7.35)),
+_HOOK_HULLS = (  # collision: the housing as two boxes (upper body; the lower middle over the rail)
+    ((65.6, 12.4), (65.6, 36.15), (0.8, 36.15), (0.8, 12.4)),
+    ((42.8, 7.35), (42.8, 12.4), (13.4, 12.4), (13.4, 7.35)),
 )
-_A3C_HOLES = (
-    ((2.77, 17.00), (4.49, 16.95), (4.93, 17.23), (4.99, 18.95), (4.71, 19.40), (2.99, 19.45), (2.55, 19.20), (2.49, 17.45)),
-    ((62.19, 17.23), (64.14, 16.95), (64.58, 17.23), (64.64, 18.95), (64.36, 19.40), (62.64, 19.45), (62.19, 19.17)),
-    ((9.51, 12.39), (6.87, 12.45), (6.40, 12.11), (5.02, 6.90), (4.66, 4.46), (4.91, 3.96), (7.57, 3.90), (8.04, 4.24), (9.09, 7.88), (9.77, 11.90)),
+_HOOK_HOLES = (  # looks: the two wire entries and a test hole
+    ((2.6, 17.0), (5.0, 17.0), (5.0, 19.5), (2.6, 19.5)),
+    ((61.4, 17.0), (63.8, 17.0), (63.8, 19.5), (61.4, 19.5)),
+    ((30.5, 14.0), (33.0, 14.0), (33.0, 16.5), (30.5, 16.5)),
 )
 
 
-BLOCK_MODEL = "WDU"  # "WDU": WDU 2.5 (symmetric sprung feet); "A3C": A3C 2.5 (fixed hook + sprung foot, release pocket)
-# A3C sprung foot, below the flexure (u outward from the rail centreline, z up from the lip tops, mm): the sole, and
-# the release pocket at its outer end (1.8 mm wide, its floor 2.1 mm above the foot's underside) between the sole's
-# inner part and an upright rim
-A3C_SOLE = ((19.2, 25.2, -7.05, -2.75), (25.2, 27.0, -7.05, -4.95), (27.0, 28.5, -7.05, -1.75))  # u0, u1, z0, z1
-A3C_HOOK_REACH = 2.5  # mm: the fixed hook's tooth reaches this far in under its lip (the CAD's)
+BLOCK_MODEL = "SYM"  # "SYM": screw-clamp block (symmetric sprung feet); "HOOK": push-in block (fixed hook + sprung foot, release pocket)
+# HOOK block's sprung foot, below the flexure (u outward from the rail centreline, z up from the lip tops, mm): the
+# sole, and a release pocket at its outer end (2 mm wide, its floor 2 mm above the foot's underside) between the
+# sole's inner part and an upright rim
+FOOT_SOLE = ((19.2, 25.0, -7.0, -2.8), (25.0, 27.0, -7.0, -5.0), (27.0, 28.5, -7.0, -1.8))  # u0, u1, z0, z1
+HOOK_REACH = 2.5  # mm: the fixed hook's tooth reaches this far in under its lip
 
 
-def _a3c(pts):
-    """A3C CAD (across, up) mm to block-frame (x, z) m."""
-    ax, up = _A3C_RAIL
+def _hook_frame(pts):
+    """HOOK design frame (across, up) mm to block-frame (x, z) m."""
+    ax, up = _HOOK_RAIL
     return [((a - ax) * MM, (u - up) * MM) for a, u in pts]
 
 
-def a3c_shapes(body: str, look: str, y: float, collide: bool = True, feet: str | None = "own") -> list[Shape]:
-    """An A3C 2.5-style push-in terminal block centred at y along the rail, seated (origin on the lip-top plane): its
-    CAD outline as the look, two boxes as the housing's collision; feet: a fixed hook at +x and, at -x, the sprung
+def hook_shapes(body: str, look: str, y: float, collide: bool = True, feet: str | None = "own") -> list[Shape]:
+    """A HOOK-model push-in terminal block centred at y along the rail, seated (origin on the lip-top plane): its
+    outline as the look, two boxes as the housing's collision; feet: a fixed hook at +x and, at -x, the sprung
     foot with the release pocket at its outer end."""
     w = BLOCK_WIDTH / 2
     y0, y1 = y - w, y + w
     mat = "polyamide" if collide else None
     own = feet == "own"
-    out = [_prism(body, look, None, _a3c(p), y0, y1) for p in _A3C_BODY_LOOK]
-    out += [_prism("foot_n" if own else body, look, None, _a3c(p), y0, y1) for p in _A3C_FOOT_LOOK]
-    out += [_prism(body, "hole", None, _a3c(p), y0 - 0.05 * MM, y1 + 0.05 * MM) for p in _A3C_HOLES]
+    out = [_prism(body, look, None, _hook_frame(p), y0, y1) for p in _HOOK_BODY_LOOK]
+    out += [_prism("foot_n" if own else body, look, None, _hook_frame(p), y0, y1) for p in _HOOK_FOOT_LOOK]
+    out += [_prism(body, "hole", None, _hook_frame(p), y0 - 0.05 * MM, y1 + 0.05 * MM) for p in _HOOK_HOLES]
     if collide:
-        out += [_prism(body, look, mat, _a3c(h), y0, y1, visible=False) for h in _A3C_HULLS]
+        out += [_prism(body, look, mat, _hook_frame(h), y0, y1, visible=False) for h in _HOOK_HULLS]
     if feet is None:
         return out
     fw0, fw1 = y - FOOT_HALF_WIDTH, y + FOOT_HALF_WIDTH
     fmat = "latch" if own and collide else None
-    if own and collide and SNAP_OFF_DEG is not None:  # the snap-off variant's centring rib (see wdu_shapes); the A3C has none
+    if own and collide and SNAP_OFF_DEG is not None:  # the snap-off variant's centring rib (see sym_shapes); the HOOK model has none
         x1 = LIP_INNER - SHEET - ARM_PLAY * MM
         out.append(Shape(body, look, mat, (x1 - 0.4 * MM, y, -0.65 * MM), (0.8 * MM, 2 * FOOT_HALF_WIDTH, 1.7 * MM),
                          visible=False))
-    for name, s, reach in (("foot_p", 1, A3C_HOOK_REACH), ("foot_n", -1, None)):
+    for name, s, reach in (("foot_p", 1, HOOK_REACH), ("foot_n", -1, None)):
         fbody = name if own else body
         pieces = _foot_profile(False, reach)
         for key in ("hook", "arm"):
             pts = [(s * u * MM, z * MM) for u, z in pieces[key]]
             out.append(_prism(fbody, look, fmat, pts if s > 0 else pts[::-1], fw0, fw1, visible=False))
         if s < 0:
-            for u0, u1, z0, z1 in A3C_SOLE:
+            for u0, u1, z0, z1 in FOOT_SOLE:
                 out.append(Shape(fbody, look, fmat, (-(u0 + u1) / 2 * MM, y, (z0 + z1) / 2 * MM),
                                  ((u1 - u0) * MM, 2 * FOOT_HALF_WIDTH, (z1 - z0) * MM), visible=False))
         if own:  # the seat pad over this lip
@@ -362,14 +354,14 @@ def a3c_shapes(body: str, look: str, y: float, collide: bool = True, feet: str |
 
 
 def _drawing(pts, flip=False):
-    """Drawing (across, up) mm to block-frame (x, z) m; ``flip`` mirrors across the rail centreline."""
+    """SYM design frame (across, up) mm to block-frame (x, z) m; ``flip`` mirrors across the rail centreline."""
     out = [(((a - _ACROSS0) * (-1 if flip else 1)) * MM, (u - _UP0) * MM) for a, u in pts]
     return out[::-1] if flip else out  # keep counter-clockwise
 
 
-def wdu_shapes(body: str, look: str, y: float, collide: bool = True, feet: str | None = "own",
+def sym_shapes(body: str, look: str, y: float, collide: bool = True, feet: str | None = "own",
                ) -> list[Shape]:
-    """A WDU 2.5-style terminal block centred at ``y`` along the rail, seated (origin on the lip-top plane).
+    """A SYM-model (screw-clamp) terminal block centred at ``y`` along the rail, seated (origin on the lip-top plane).
 
     ``feet``: "own" puts each foot on its own body (``foot_p``/``foot_n``, for the jointed block); "visual" adds
     them to ``body`` as looks only, with no seat pads (for a block that is part of the rail).
@@ -448,7 +440,7 @@ def rail_shapes() -> list[Shape]:
     if not RAIL_BEIGE:
         return out
     # the beige block, mounted against the left bracket: its housing collides, its feet are looks only
-    for sh in wdu_shapes("rail", "beige", (BEIGE_Y[0] + BEIGE_Y[1]) / 2, feet="visual",
+    for sh in sym_shapes("rail", "beige", (BEIGE_Y[0] + BEIGE_Y[1]) / 2, feet="visual",
                          ):
         out.append(_lift(sh, RAIL_HEIGHT + SEATED_HEIGHT))
     return out
@@ -464,7 +456,7 @@ def _lift(sh: Shape, dz: float) -> Shape:
 
 
 def block_shapes(look: str = "blue") -> list[Shape]:
-    return (a3c_shapes if BLOCK_MODEL == "A3C" else wdu_shapes)("body", look, 0.0)
+    return (hook_shapes if BLOCK_MODEL == "HOOK" else sym_shapes)("body", look, 0.0)
 
 
 # terminal blocks: the same jointed part in different colours (kind -> look)

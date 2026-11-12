@@ -32,6 +32,7 @@ Scripted demo (drives the same embodiment and task-file scoring directly):
 
     python demo.py                    # GPU physics, as a trial runs
     python demo.py --variant hold     # no arm moves: every lever stays closed (score 0)
+    python demo.py --variant reclose  # opens the leftmost lever, closes it again, then the second: score 0
     python demo.py --device cpu       # CPU physics, ~3x faster, for quick checks
 
 ## The scene
@@ -50,21 +51,25 @@ Scripted demo (drives the same embodiment and task-file scoring directly):
 
 ## Scoring
 
-At the end of the episode:
+Interrupting a circuit that should stay live is the error this task is about, so touching another lever scores
+zero, even if it is closed again. At the end of the episode:
 
 | credit | condition |
 | --- | --- |
-| 1.0 | the second lever from the left **open** and the other four **closed** (success: held for 1 s in a row) |
-| 0.5 | the second lever open, but one of the other four not closed |
-| 0.25 | the second lever open, but two or more of the others not closed |
-| 0 | the second lever not open |
+| 0 | any of the other four levers was **lifted more than 10 degrees at any point** in the episode (even if closed again) |
+| 1.0 | otherwise, the second lever from the left **open** and **kept open for the last 1 s** (success) |
+| 0.5 | otherwise, the second lever was lifted **past its snap point** (45 degrees) at some point |
+| 0.25 | otherwise, the second lever was lifted **at least 15 degrees** at some point |
+| 0 | otherwise |
 
 - **Open:** 80 degrees or more from its closed position (the stop is at 95).
-- **Closed:** 10 degrees or less.
+- The task file records, every control step (20 Hz), each lever's largest angle so far and how long it has been open
+  without a break; the score is read from these, so an episode cannot end in full credit after a neighbour was
+  opened and closed again, nor with the second lever only just flipped open.
 
-A lever left alone ends against one of its two stops, so there is no credit for a half-moved lever. In a real trial
-these are read from a photo of the strip from the side (or with a protractor): which levers stand up and which lie
-flat.
+In a real trial these are read from a side-on video of the strip: the largest angle each lever reached (a protractor
+card behind the strip, or the lever's tab against marks on the housing), and whether the second lever stood open for
+the last second.
 
 ## Measured results
 
@@ -72,12 +77,14 @@ Scripted demo, 20 Hz control, object jitter 0, run limit 600 steps.
 
 | run | score | notes |
 | --- | --- | --- |
-| GPU (`cuda:0`) | **1.0** (success at step 190) | pushed the tab from step 109 (the command leading the fingertip by up to 47 mm); the lever open at step 172; the other four levers stayed at 0 degrees |
-| CPU | **1.0** (success at step 189) | the same sequence; the lever open at step 171 |
+| GPU (`cuda:0`) | **1.0** (success at step 180) | the lever pushed open at step 162 (the command leading the fingertip by up to 47 mm); full credit at step 180, once it had been open for 1 s; the other four levers never moved |
+| CPU | **1.0** (success at step 182) | the score rose to 0.25 at step 142 (the lever at 16 degrees), 0.5 at step 161 (45 degrees) and 1.0 at step 182, once the lever had been open for 1 s; the other four levers never moved |
+| GPU, `--variant reclose` | **0.0** (600 steps) | the leftmost lever opened at step 163 and pushed closed again at step 323; the second lever opened at step 522 and stayed open: the final state is the full demo's, but the score is 0 throughout |
 | CPU, `--variant hold` | 0.0 (100 steps) | no arm moves: all five levers stay at 0 degrees |
 
-Dream-1, run with the command above (and `--policy dream -E cam_width=320 -E cam_height=176`), scored 0.0: in 600
-steps its left arm went to the rail's left end bracket and its right arm stayed back; neither touched a lever.
+Dream-1, run with the command above (and `--policy dream -E cam_width=320 -E cam_height=176`) on this version of the
+task, scored 0.0: in 600 steps its left arm went to the rail's left end and its right arm stayed back; neither touched
+a lever.
 
 ## The demo
 
@@ -85,6 +92,10 @@ Right arm: gripper open (47 mm between the pads). One fingertip (3.9 mm thick al
 of the second lever's tab, its end 4 mm below the tab's top, and pushes the tab away from the arms, the command
 leading (the arm is soft), until the lever has snapped open; backs off 15 mm and lifts away. The other fingertip
 stays beyond the strip's left end. The left arm does not move.
+
+`--variant reclose` checks the scoring: the right arm first opens the leftmost lever, then pushes it closed again
+(its fingertip against the upright lever's far side, pushed toward the arms), then opens the second lever as in the
+demo. It ends in the state the full demo ends in, but scores 0: a neighbouring circuit was interrupted.
 
 ## How it is built
 
@@ -98,6 +109,11 @@ Parts are spawned from USD files written to a temporary folder.
 - **Snap:** each hinge has a spring (0.02 N m/rad) whose target is 12 degrees beyond the stop the lever is nearer;
   once per control step (20 Hz) the target switches side when the lever crosses 45 degrees.
 - **Rail:** fixed.
+
+## Assets
+
+No third-party assets: the rail, the disconnect blocks and their levers are this task's own geometry, built in code
+(`disconnect.py`, `tb_parts.py`); no meshes, scans or CAD files are used.
 
 ## Fidelity: what is simplified
 

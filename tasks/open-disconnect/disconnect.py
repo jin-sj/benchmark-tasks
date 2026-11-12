@@ -183,10 +183,26 @@ def arena_object(spec: tp.Part):
 
 @dataclass(frozen=True)
 class StripState(task_file.ObjectState):
-    """The strip's ``ObjectState`` (its origin) plus each lever's angle in degrees, leftmost block first
-    (0 closed, 95 open)."""
+    """The strip's ``ObjectState`` (its origin) plus, per lever, leftmost block first: its angle now in degrees (0
+    closed, 95 open), the largest angle it has reached so far this episode, and for how long (s) it has been open
+    (80 degrees or more) without a break, up to now."""
 
     levers_deg: tuple[float, ...] = ()
+    levers_max_deg: tuple[float, ...] = ()
+    levers_open_s: tuple[float, ...] = ()
+
+
+OPEN_RECORD_DEG = 80.0  # a lever at or beyond this counts as open for levers_open_s
+
+
+@dataclass
+class _Run:
+    step: int = -1
+    max_deg: np.ndarray | None = None
+    open_s: np.ndarray | None = None
+
+
+_RUNS: dict[str, _Run] = {}
 
 
 def _angles(strip) -> np.ndarray:
@@ -196,12 +212,23 @@ def _angles(strip) -> np.ndarray:
 
 
 def update(base, name: str, states: dict) -> None:
-    """Once per control step: point each lever's spring at the stop it is nearer (the snap)."""
+    """Once per control step: record each lever's largest angle and how long it has been open, and point each
+    lever's spring at the stop it is nearer (the snap)."""
     import torch
 
     strip = base.scene.articulations[name]
     names = list(strip.joint_names)
-    t = _targets(_angles(strip))
+    q = _angles(strip)
+    step = int(base.episode_length_buf[0])
+    run = _RUNS.get(name)
+    if run is None or step == 0 or step < run.step:  # a new episode
+        run = _RUNS[name] = _Run(max_deg=np.degrees(q), open_s=np.zeros(N_BLOCKS))
+    if step != run.step:  # once per control step (object_states may be asked more than once a step)
+        run.step = step
+        deg = np.degrees(q)
+        run.max_deg = np.maximum(run.max_deg, deg)
+        run.open_s = np.where(deg >= OPEN_RECORD_DEG, run.open_s + float(base.step_dt), 0.0) if step > 0 else run.open_s
+    t = _targets(q)
     target = torch.zeros((1, len(names)), device=base.device)
     for i in range(N_BLOCKS):
         target[0, names.index(f"lever_{i}")] = float(t[i])
@@ -210,6 +237,7 @@ def update(base, name: str, states: dict) -> None:
 
 def state(base, name: str) -> StripState:
     strip = base.scene.articulations[name]
+    run = _RUNS.get(name)
     origin = base.scene.env_origins[0].detach().cpu().numpy().astype(np.float64)
     pose = strip.data.root_pose_w.torch[0].detach().cpu().numpy().astype(np.float64)
     pos = pose[:3] - origin
@@ -217,4 +245,6 @@ def state(base, name: str) -> StripState:
     c = np.array(tp.local_center(KIND))
     return StripState(pos=pos + c, quat_xyzw=pose[3:], lin_vel=np.zeros(3), ang_vel=np.zeros(3),
                       low=pos + np.array(lo), high=pos + np.array(hi),
-                      levers_deg=tuple(float(v) for v in np.degrees(_angles(strip))))
+                      levers_deg=tuple(float(v) for v in np.degrees(_angles(strip))),
+                      levers_max_deg=tuple(float(v) for v in run.max_deg) if run else (),
+                      levers_open_s=tuple(float(v) for v in run.open_s) if run else ())

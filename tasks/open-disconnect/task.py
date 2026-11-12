@@ -43,16 +43,21 @@ OBJECTS = [tp.part("rail", "rail", RAIL_ORIGIN, fixed=True), dc.part("strip", ST
 
 # -- scoring thresholds ----------------------------------------------------------------------------------------
 OPEN_DEG = 80.0  # a lever at or beyond this is open (its stop is at 95)
-CLOSED_DEG = 10.0  # a lever at or below this is closed
+TOUCHED_DEG = 10.0  # another lever lifted beyond this at any point in the episode: its circuit was interrupted
+SNAP_DEG = 45.0  # the target lever lifted past this at any point: it was opened (it snaps open past here)
+LIFTED_DEG = 15.0  # the target lever lifted at least this at any point: progress
+HOLD_S = 1.0  # full credit needs the target open, the others never touched, for this long
+CREDIT = {"opened": 0.5, "lifted": 0.25}
 
 
 def levers(objects) -> tuple[float, ...]:
     return tuple(objects["strip"].levers_deg)
 
 
-def others_opened(objects) -> int:
-    """How many of the other four levers are no longer closed (above 10 degrees)."""
-    return sum(1 for i, a in enumerate(levers(objects)) if i != TARGET and a > CLOSED_DEG)
+def others_touched(objects) -> bool:
+    """Whether any of the other four levers was lifted more than 10 degrees at any point so far (its circuit was
+    interrupted, even if it was closed again)."""
+    return any(a > TOUCHED_DEG for i, a in enumerate(objects["strip"].levers_max_deg) if i != TARGET)
 
 
 def target_open(objects) -> bool:
@@ -60,17 +65,24 @@ def target_open(objects) -> bool:
 
 
 def success(objects) -> bool:
-    """The second lever open, the other four closed (held 1 s)."""
-    return bool(target_open(objects) and others_opened(objects) == 0)
+    """The second lever open, the other four never lifted more than 10 degrees (held 1 s)."""
+    return bool(target_open(objects) and not others_touched(objects))
 
 
 def score(objects) -> float:
-    """At the end of the episode (success scores 1.0): 1.0 the second lever open and the other four closed; 0.5 it
-    is open but one other lever is not closed; 0.25 it is open but two or more others are not closed; 0 it is not
-    open."""
-    if not target_open(objects):
+    """At the end of the episode (success scores 1.0); 0 if any of the other four levers was lifted more than 10
+    degrees at any point. Otherwise: 1.0 the second lever open (80 degrees or more) and kept open for the last 1 s;
+    0.5 it was lifted past its snap point (45 degrees) at some point; 0.25 it was lifted at least 15 degrees at some
+    point; 0 otherwise."""
+    if others_touched(objects):
         return 0.0
-    return {0: 1.0, 1: 0.5}.get(others_opened(objects), 0.25)
+    st = objects["strip"]
+    if target_open(objects) and st.levers_open_s[TARGET] >= HOLD_S:
+        return 1.0
+    reached = st.levers_max_deg[TARGET]
+    if reached >= SNAP_DEG:
+        return CREDIT["opened"]
+    return CREDIT["lifted"] if reached >= LIFTED_DEG else 0.0
 
 
 def distance(objects) -> float:
