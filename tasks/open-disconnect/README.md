@@ -131,4 +131,5 @@ No third-party assets: the rail, the disconnect blocks and their levers are this
 - From the fixed top camera the levers are a few pixels wide; a wrist camera over the strip shows them clearly.
 - `tb_parts.install()` wraps two functions of `yam_arena.scene`; a yam_arena update that changes them stops the task
   with an error.
-- The scorer cannot see whether the robot is still touching the lever when it counts success.
+- Holding the lever does not change the score: past 45 degrees it snaps open and its spring keeps it against the
+  open stop (95 degrees) on its own, so a lever counted open for the last 1 s stays open when the robot lets go.
