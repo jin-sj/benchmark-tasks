@@ -5,15 +5,15 @@
 On the rail, latched, three terminal blocks about 28 mm apart: beige, blue, beige from the left. In front of the
 right arm, nearer the arms than the rail: an open, shallow black parts tray (low walls, no slots), empty.
 
-A terminal block is shaped like an A3C 2.5 push-in feed-through terminal: 5.1 mm thick (along the rail), 65 mm long
+A terminal block is a push-in feed-through terminal block: 5.1 mm thick (along the rail), 65 mm long
 (across it), 36 mm tall (29 mm above the rail). Its base hooks under the rail's lips: at the far end (away from the
 arms) a fixed hook, which gives about 2.5 mm when pushed firmly; at the near end (toward the arms) a sprung foot. It
 cannot be pulled straight off. To take it off, push it about 2.5 mm toward the arms (about 3 N; the fixed hook gives)
 so the sprung foot comes out from under its lip; tip the near end up a few degrees; slide the block about 5 mm toward
 the far side so the hook comes out from under its lip; lift it off.
 
-Task: take the blue block off the rail and put it in the tray. Hold the rail down with one arm while the other pulls
-the block off; leave the two beige blocks latched where they are.
+Task: take the blue block off the rail and put it in the tray, letting go of it there. Hold the rail down with one arm
+while the other pulls the block off; leave the two beige blocks latched where they are.
 """
 
 from __future__ import annotations
@@ -36,11 +36,12 @@ tp.RAIL_LENGTH = 0.50
 tp.RAIL_MASS = 0.20
 tp.LEFT_BRACKET_Y = (0.200, 0.208)
 tp.RIGHT_BRACKET_Y = (-0.208, -0.200)
-tp.BLOCK_MODEL = "A3C"  # the A3C 2.5's outline from its CAD: fixed hook at +x (far side), sprung foot at -x (near side)
+tp.BLOCK_MODEL = "HOOK"  # push-in block: fixed hook at +x (far side), sprung foot at -x (near side)
 tp.FIXED_HOOK = True
 tp.HOOK_FLEX = 2.5 * 1e-3  # the fixed hook gives up to 2.5 mm under a firm push (the plastic bends) ...
 tp.HOOK_SPRING = 1000.0  # ... at 1 N/mm (a simplification: about what the simulated arm can push sideways)
-tp.BLOCK_HEIGHT = (36.15 - 7.05) * 1e-3  # the A3C's top above the lip tops
+tp.BLOCK_HEIGHT = (36.15 - 7.05) * 1e-3  # the block's top above the lip tops
+tp.TOUCH_WATCH.add("blue")  # the blue block's contact with the robot is measured (released: no contact)
 tp.install()
 
 SCENE = "station"
@@ -74,6 +75,9 @@ MAX_SQUARE_DEG = 3.0
 OFF_RAIL = 20 * MM  # a block whose base is this far above the lips (or off the rail's footprint) is off the rail
 UNDISTURBED = 1.0 * MM  # a beige block moved less than this along the rail and stayed latched
 TRAY_WALL_TOP = TOP + tp.TRAY_FLOOR + tp.TRAY_WALL_HEIGHT
+TRAY_FLOOR_TOP = TOP + tp.TRAY_FLOOR
+ON_FLOOR = 2 * MM  # "on the tray floor": the block's lowest point within this of the floor's top
+RELEASED_N = 0.05  # "released": the robot presses on the block with less than this (N)
 CREDIT = {"unlatched": 0.25, "off": 0.5, "in_tray": 0.75}
 CAP = CREDIT["unlatched"]  # a beige block disturbed, or the rail moved
 
@@ -148,6 +152,16 @@ def in_tray(state) -> bool:
     return bool(abs(c[0] - TRAY_ORIGIN[0]) <= hx and abs(c[1] - TRAY_ORIGIN[1]) <= hy and lo[2] <= TRAY_WALL_TOP)
 
 
+def on_tray_floor(state) -> bool:
+    """In the tray and resting on its floor: its lowest point within 2 mm of the floor's top."""
+    return bool(in_tray(state) and float(np.asarray(state.low)[2]) <= TRAY_FLOOR_TOP + ON_FLOOR)
+
+
+def released(state) -> bool:
+    """No robot link touching the block (contact force under 0.05 N)."""
+    return bool(state.robot_contact_n < RELEASED_N)
+
+
 def undisturbed(objects) -> bool:
     """Both beige blocks latched within 1 mm of where they started along the rail."""
     for n in ("beige_1", "beige_2"):
@@ -169,13 +183,15 @@ def stage(objects) -> str | None:
 
 
 def success(objects) -> bool:
-    """The blue block in the tray and still (held 1 s), the beige blocks latched where they were, the rail in place."""
-    return bool(stage(objects) == "in_tray" and objects[TARGET].resting() and undisturbed(objects) and rail_ok(objects))
+    """The blue block released (no robot contact) and resting still on the tray's floor, for 1 s in a row; the beige
+    blocks latched where they were; the rail in place."""
+    s = objects[TARGET]
+    return bool(on_tray_floor(s) and released(s) and s.resting() and undisturbed(objects) and rail_ok(objects))
 
 
 def score(objects) -> float:
-    """Partial credit at the end of the episode (success scores 1.0): 0.75 the blue block in the tray, 0.5 off the
-    rail, 0.25 unlatched (pushed off-centre, its sprung foot out, or the block tipped up); capped at 0.25 if a beige block was moved 1 mm
+    """Partial credit at the end of the episode (success, which needs the block released on the tray floor for 1 s,
+    scores 1.0): 0.75 the blue block in the tray (released or not), 0.5 off the rail, 0.25 unlatched (pushed off-centre, its sprung foot out, or the block tipped up); capped at 0.25 if a beige block was moved 1 mm
     or unlatched, or the rail moved 1 cm or turned 3 degrees."""
     credit = CREDIT.get(stage(objects), 0.0)
     return credit if undisturbed(objects) and rail_ok(objects) else min(credit, CAP)

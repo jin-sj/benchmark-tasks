@@ -1,6 +1,7 @@
 """Scripted two-arm demo for the dismount task, closed loop on the simulator's object poses.
 
     python demo.py                    # left arm holds the rail; right arm takes the blue block off, into the tray: 1.0
+    python demo.py --variant held     # the same, but the block is lowered onto the tray floor and never let go: 0.75
     python demo.py --device cpu       # CPU physics, ~3x faster, for quick checks
 
 It drives the ``yam_arena`` embodiment directly (20 Hz control, object_jitter 0, as a trial runs) and reads the
@@ -36,7 +37,7 @@ INSTRUCTION = (
     "Take the blue terminal block off the DIN rail and put it in the tray. Hold the rail down with one arm while the "
     "other takes the block off, and leave the two beige blocks where they are."
 )
-VARIANTS = ("full",)
+VARIANTS = ("full", "held")
 CAMERAS = ("top_cam", "left_cam", "right_cam")
 CONTROL_HZ = 20.0
 DT = 1.0 / CONTROL_HZ
@@ -314,6 +315,12 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         low = float(world["states"][task.TARGET].low[2])
         drop = arm.pos[2] - (low - (spot[2] + TRAY_DROP))
         yield from move(arm, (arm.pos[0], arm.pos[1], drop), 1.5, label="lower it")
+        if variant == "held":  # lower it onto the tray floor and never let go: in the tray, but not released
+            yield from move(arm, arm.pos - np.array([0.0, 0.0, TRAY_DROP - 1 * MM]), 1.0, label="down onto the floor")
+            phase["right"] = "hold it in the tray"
+            report["script_done_step"] = world["step"] + round(3.0 / DT)
+            while True:
+                yield
         yield from move(arm, arm.pos, 0.6, grip=OPEN, label="let go")
         yield from move(arm, arm.pos + (0, 0, 0.06), 1.0, label="up")
         yield from move(arm, arm.pos + (-0.05, 0.05, 0.0), 1.2, label="away")
@@ -347,7 +354,9 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         row = {"step": step, "rail_rpy_deg": rpy, "left": phase["left"], "right": phase["right"], "score": res.info.get("score"),
                "success": res.info.get("success"), "stage": task.stage(st), "undisturbed": task.undisturbed(st),
                "rail_shift_mm": round(shift / MM, 3), "rail_turn_deg": round(turn, 3),
-               "blue_low_z": round(float(st[task.TARGET].low[2]), 4)}
+               "blue_low_z": round(float(st[task.TARGET].low[2]), 4),
+               "blue_contact_n": round(float(st[task.TARGET].robot_contact_n), 3),
+               "blue_on_floor": task.on_tray_floor(st[task.TARGET]), "blue_released": task.released(st[task.TARGET])}
         for n in task.BLOCKS:
             b = on_rail(n)
             row[n] = {"along_mm": round(b["along"] / MM, 2), "across_mm": round(b["across"] / MM, 2),
