@@ -1,0 +1,21 @@
+{
+  "title": "Measure the voltage between two named terminals with a pair of test probes",
+  "category": "Impact on jobs",
+  "keywords": [
+    "electrical testing",
+    "multimeter probes",
+    "bimanual",
+    "tool use",
+    "precise placement",
+    "terminal block"
+  ],
+  "instruction": "Measure the voltage between the L terminal and the N terminal: hold one probe's tip in each terminal's test opening, both at once, for one second. Do not put a probe tip into any other terminal's opening.",
+  "context": "Electricians check circuits by holding a meter's two probe tips on two terminals at once. On a crowded terminal strip the tips must go into the right test openings, one per hand, and stay put; probing the wrong terminal measures the wrong circuit.",
+  "setup": "A steel TS35 x 7.5 DIN rail, 500 mm long, fixed flat on the table (open side up, left to right), its centre 0.30 m in front of the arm bases on their midline. Latched on it at its middle, 40 polyamide terminal blocks side by side, 5.2 mm apart centre to centre, each 56 mm long across the rail and 40 mm tall; from the left: green-yellow, grey (L), 35 beige, blue (N), green-yellow, beige. L is 96.2 mm left of the rail's centre, N 91.0 mm right. On top of every block at its middle, a test opening: a 2.6 mm square hole, 8 mm deep, with a 45 degree funnel at its mouth (1.5 mm, 1.0 mm at the sides), its floor the metal clamp. Two black plastic holders (30 mm cubes, an 8 mm hole in the top) fixed 0.20 m in front of the arm bases, 0.14 m left and right of the midline; in them, tip down, a red probe (left) and a black probe (right), each 140 mm long, 30 g: 2 mm steel tip 15 mm long, 6 mm shroud, 16 mm finger guard resting on the holder, 10 mm handle 100 mm long.",
+  "scoring": "At the end of the run: 0 if a probe tip ever entered any other terminal's test opening (1 mm or more below its mouth). Otherwise: 1.0 if both tips were seated in the L and N openings, one in each (3 mm or more below the mouth), with both probes held by a closed gripper, without a break for 1 s; 0.5 if one tip was seated in the L or N opening while its probe was held, at some point; 0.25 if both probes were lifted 30 mm or more out of their holders at some point; 0 otherwise.",
+  "run_limit": "1,200 steps (60 s at 20 Hz)",
+  "reset_notes": "Stand the probes back in their holders, tip down. Nothing is consumed. In a real trial, a meter on the probes' leads with a test voltage on L and N confirms the measurement.",
+  "fidelity": "PhysX at 240 Hz. The probes have no leads (real ones trail about 1 m of cable each). No electricity is simulated: a tip makes contact when seated on the opening's floor. Terminal blocks are fixed colliders of a generic design; test openings are square (usually round). Probes collide as square sections.",
+  "scores": "Dream-1 run: 0.0 (1,200 steps; the arms moved about but never picked up a probe); scripted demo: 1.0 (success at step 562, both tips held in L and N for 1 s). Check in the README: a tip put into a wrong terminal's opening first scores 0.",
+  "media": "M-94548R"
+}
