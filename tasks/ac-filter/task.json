@@ -1,0 +1,21 @@
+{
+  "title": "Replace the mesh filter in a wall-mounted air conditioner",
+  "category": "Societal relevance",
+  "keywords": [
+    "bimanual",
+    "household maintenance",
+    "air conditioner",
+    "hinged cover",
+    "unhook and re-hook",
+    "thin part"
+  ],
+  "instruction": "Replace the dusty filter with the clean one: open the cover, take the dusty filter out, fit the clean filter in its place, and close the cover.",
+  "context": "Split air conditioners' manuals ask owners to clean or replace the mesh filter every few weeks; it is unhooked from behind a hinged cover and re-hooked the same way.",
+  "setup": "A wall board (20 mm thick, 900 x 450 mm) across the table 0.74 m from the arm bases; on it a white plastic split-AC indoor unit, 700 mm wide, 270 mm tall, 190 mm deep, underside 80 mm above the table, front 0.55 m from the bases, centred. Front cover: a 700 x 173 x 12 mm panel, 0.3 kg, hinged along its top edge (344 mm up), a 10 mm finger pull along its bottom edge; its stiff hinge holds it at any angle, fully open at 80 degrees. Behind it the filter stands on a ledge 150 mm up, behind three 6 mm lugs, its top behind a lip from 300 mm up. Filters: 600 mm wide, 168 mm tall, grey plastic frame (5 mm deep) and mesh, lower part flat, top 55 mm bent back 15 degrees, two pull tabs (20 x 20 x 3 mm) on the bottom edge 150 mm either side of the middle. The dusty one (90 g, brown-grey) is fitted; the clean one (80 g, light grey) lies face up on the table, tabs up toward the robot, its bottom edge 0.36 m from the bases, centred.",
+  "scoring": "At the end: 0 if any part of the dusty filter is in the unit (behind its front, between its underside and top). Otherwise 1.0 if the clean filter is fitted (on the ledge within 2 mm, behind the lugs, top behind the lip, upright and facing out within 3 degrees, centred within 10 mm) and the cover shut (within 3 degrees: bottom edge within 9 mm of the unit), held 1 s; 0.5 fitted with the cover open; 0.25 otherwise.",
+  "run_limit": "3,000 steps (150 s at 20 Hz)",
+  "reset_notes": "Refit the dusty filter, lay the clean one back face up on the table, shut the cover. Nothing is consumed. A real trial needs a unit whose filter is held by lugs below and a lip above and whose cover stays open by itself.",
+  "fidelity": "PhysX at 240 Hz. The unit hangs at bench height (real ones are about 2 m up). One 600 mm filter (many units have two of about 300 mm). Filters rigid; dust not simulated. The stiff hinge is a joint drive re-aimed each step. Generic unit design.",
+  "scores": "Dream-1 run: 0.0 (3,000 steps; its arms stayed near their bases and never reached the unit); scripted demo: 1.0 (success at step 1,738: cover opened, filters swapped, cover shut). Checks in the README: cover left open 0.5; clean filter half fitted 0.25.",
+  "media": "M-3GS9Q2"
+}
