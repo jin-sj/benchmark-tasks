@@ -1,0 +1,22 @@
+{
+  "title": "Cut a DIN rail to length with a bench rail cutter",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "tool use",
+    "measuring",
+    "cutting to length",
+    "lever",
+    "DIN rail",
+    "panel building"
+  ],
+  "instruction": "Cut a 250 mm length off the right end of the rail with the rail cutter.",
+  "context": "Electricians and panel assemblers cut DIN rail to length for every control panel they build: slide it through a bench cutter to the mark, hold it still, pull the lever. A rail cut short, or moved mid-cut, is scrap.",
+  "setup": "A bench rail cutter fixed to the table, its rail path 0.32 m in front of the arm bases, running left to right, its blade 0.04 m right of their midline. Blue cast steel body: infeed ledge (60 mm wide, 40 mm tall) from 12 to 680 mm left of the blade, with two guide fences (3 mm thick, 4 mm tall, inner faces 14 mm either side of the rail path); a die 24 mm long around the blade, its opening 37 x 9.5 mm, flared 3 mm at its infeed mouth; outfeed ledge (60 x 40 mm) from 12 to 330 mm right of the blade, with a length scale on its top on the arms' side measured from the blade (black marks every 10 mm, longer every 50 and 100 mm, to 300 mm). A lever hinged behind the die, 40 mm behind the rail path and 80 mm up: a steel arm 205 mm long pointing toward the arms with an 80 mm red rubber handle (22 mm square), sprung up to 45 degrees; pulling it level (about 10 N) drives the blade through the die. A loose steel TS35 x 7.5 top-hat DIN rail, 600 mm long, 0.2 kg, open side up, lies on the infeed ledge between the fences, its right end 40 mm short of the blade.",
+  "scoring": "The cut is the lever's first stroke to within 4 degrees of level; only it counts. 1.0: the rail was in the die, its right end 250 mm past the blade within 1 mm, and it moved under 0.5 mm along the cutter while the blade was in it (lever below 20 degrees). 0.5: otherwise, cut in the die within 5 mm of 250 mm. 0.25: otherwise, no such cut, but before the cut the rail lay in the die with its end within 5 mm of 250 mm for 1 s without a break. 0 otherwise.",
+  "run_limit": "1,200 steps (60 s at 20 Hz)",
+  "reset_notes": "In a real trial each attempt uses a new 600 mm rail (the cut consumes it); measure the cut piece with a ruler. In the simulation nothing is cut, so the rail is reset to its start.",
+  "fidelity": "PhysX at 240 Hz. Nothing is cut: the blade does not collide and the cut length is the rail's position at the lever's stroke. The lever is soft (about 10 N; a real cutter needs much more) and the rail does not resist the blade. No length stop, only a scale. Generic cutter design.",
+  "scores": "Dream-1 run: 0.0 (1,200 steps; the arms hovered over the cutter's ends but never gripped the rail or the lever); scripted demo: 1.0 (cut 249.4 mm, the rail moved 0.17 mm). Checks in the README: 3 mm short 0.5; rail moved under the blade 0.5; set but not cut 0.25.",
+  "media": "M-Q8YET8"
+}
