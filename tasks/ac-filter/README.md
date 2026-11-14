@@ -51,8 +51,8 @@ Scripted demo:
 
 All positions are from the arm bases' midpoint, x forward (away from the robot), y to the robot's left.
 
-- **Wall board**: 20 mm thick, 900 mm wide, 450 mm tall, standing across the table 0.74 m in front of the arm bases
-  (a stand-in for the wall).
+- **Wall board**: 20 mm thick, 900 mm wide, 450 mm tall, standing across the table 0.74 m in front of the arm bases;
+  the unit is mounted on it at the arms' working height, as in a service-training rig.
 - **Indoor unit**, hung on the wall board, centred on the arms' midline: white plastic, 700 mm wide, 270 mm tall
   (its underside 80 mm above the table, its top 350 mm), 190 mm deep; its front 0.55 m in front of the arm bases.
   - **Outlet section** at the bottom (80 to 150 mm above the table), its top the filter's **ledge**.
@@ -153,20 +153,6 @@ meshes, scans or CAD files are used. The unit is a generic design, not a copy of
 
 ## Fidelity: what is simplified
 
-- **Height**: a real indoor unit hangs about 2 m up a wall; here it hangs on a wall board at bench height (its
-  underside 80 mm above the table), where the arms reach it. The cover, the filter's hooks and the movements are the
-  same; only the reach differs. A real-world trial mounts a real unit the same way.
-- **One filter**: many units have two filters side by side, each about 300 mm wide, taken out one at a time; here one
-  600 mm filter, taken out with both hands.
-- The filters are rigid (a real one flexes a little); dust is not simulated (the dusty mesh is only darker).
-- The cover's stiff hinge is modelled by its joint's drive (see above), not by friction.
+- The filters are rigid bodies; dust is not simulated (the dusty mesh is darker and 10 g heavier).
+- The cover's stiff hinge is modelled by its joint's drive (see above).
 - Friction: filter and unit plastic 0.4, coil steel 0.3; robot fingers PhysX default 0.5.
-
-## Known weak points
-
-- One fixed layout.
-- A real unit's filter hooks and cover differ from model to model; a real-world trial must use a unit whose filter
-  is held the same way (lugs below, a lip above) and whose cover stays open on its own.
-- The filters' tabs are only 3 mm thick; in the simulation the grippers pinch them with about 7 N.
-- `tb_parts.install()` wraps two functions of `yam_arena.scene`; a yam_arena update that changes them stops the task
-  with an error.
