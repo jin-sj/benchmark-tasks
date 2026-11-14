@@ -47,7 +47,8 @@ OPEN = 0.35  # gripper opening (0..1 of 94 mm): ~33 mm between the pads, around 
 GRIP_AT = 80 * MM  # grip the handle this far above the probe's tip (the TCP): near the probe's centre of mass, so
 # it does not pivot in the pinch (gripped low, the top-heavy probe tips over in the grip)
 TIP_ABOVE = 10 * MM  # line the tip up this far above the opening's mouth
-INSERT = 5 * MM  # then lower the tip this far below the mouth (seated: 3 mm)
+INSERT = 5 * MM  # then lower the tip this far below the mouth (it is in the bore) ...
+PRESS = 1.5 * MM  # ... and on down onto the clamp (the opening's floor), holding it there pressed this much
 LOWER_RATE = 6 * MM  # per second
 MAX_LEAD = 3 * MM  # while lowering, the command leads the measured gripper by at most this (no hard push on the top)
 STALL_STEPS = 6  # the gripper has stopped descending for this many steps: the tip is on the block's top
@@ -235,6 +236,19 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
                 if entered:
                     break
                 yield from move(arm, measured_tcp(side)[0] + (0, 0, 0.004), 0.4, label="lift the tip off")
+            # on down until the tip stops on the clamp, then hold it there, pressed lightly
+            phase[side] = f"onto the clamp of terminal {i + 1}"
+            cmd_z, stall, last_z = arm.pos[2], 0, measured_tcp(side)[0][2]
+            for _ in range(round(3.0 / DT)):
+                p = measured_tcp(side)[0]
+                stall = stall + 1 if last_z - p[2] < 0.1 * MM else 0
+                last_z = p[2]
+                if stall >= STALL_STEPS:
+                    break
+                cmd_z = max(cmd_z - LOWER_RATE * DT, p[2] - MAX_LEAD)
+                arm.pos = np.array([arm.pos[0], arm.pos[1], cmd_z])
+                yield
+            arm.pos = np.array([arm.pos[0], arm.pos[1], measured_tcp(side)[0][2] - PRESS])
             report.setdefault("tries", {})[f"{side}_{i + 1}"] = n_try + 1
             report.setdefault("inserted", []).append({"side": side, "terminal": i + 1, "step": world["step"]})
             if k < len(targets) - 1:  # out again, up to the next one

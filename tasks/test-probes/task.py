@@ -66,21 +66,21 @@ def wrong_opening() -> bool:
 
 
 def measured() -> bool:
-    """Both probe tips seated (3 mm or more below the mouth) in the L and N openings, one in each, both probes held
+    """Both probe tips on their clamps (at the floor of the L and N openings, one in each), both probes held
     by a closed gripper, without a break for the last 1 s."""
     return pp.RECORD.get("both_s", 0.0) >= HOLD_S - 1e-6
 
 
 def success(objects) -> bool:
-    """Measured (both tips seated in L and N and held, for 1 s), no tip ever in a wrong opening."""
+    """Measured (both tips on the L and N clamps and held, for 1 s), no tip ever in a wrong opening."""
     return bool(pp.RECORD and measured() and not wrong_opening())
 
 
 def score(objects) -> float:
     """At the end of the episode (success scores 1.0): 0 if a probe tip ever entered any other terminal's test
-    opening. Otherwise 1.0 measured (both tips seated in L and N, both probes held, for 1 s); 0.5 one tip was seated
-    in the L or N opening while its probe was held, at some point; 0.25 both probes were lifted 30 mm or more out of
-    their holders at some point; 0 otherwise."""
+    opening. Otherwise 1.0 measured (both tips on the L and N clamps, both probes held, for 1 s); 0.5 one tip was on
+    the L or N clamp while its probe was held, at some point; 0.25 both probes were lifted 30 mm or more out of their
+    holders at some point; 0 otherwise."""
     if not pp.RECORD or wrong_opening():
         return 0.0
     if measured():

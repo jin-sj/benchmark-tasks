@@ -148,7 +148,8 @@ def install() -> None:
 
 
 # -- the record -------------------------------------------------------------------------------------------------------
-SEATED_DEPTH = 3.0 * MM  # a tip at least this far below an opening's mouth, inside its bore, is seated (on the clamp)
+ON_CLAMP = 0.7 * MM  # a tip in its opening's bore within this of the opening's floor, the clamp, touches the clamp
+SEATED_DEPTH = OPENING_DEPTH - ON_CLAMP  # (that is, this far below the mouth): it makes contact
 ENTERED_DEPTH = 1.0 * MM  # a tip this far below a wrong opening's mouth, inside its bore, has entered it
 IN_BORE = OPENING / 2 + 0.3 * MM  # a tip's centre within this of an opening's axis (each way) is inside its bore
 LIFTED = 30 * MM  # a probe whose tip rose this far above where it started has been lifted out of its holder

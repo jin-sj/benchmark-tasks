@@ -54,7 +54,11 @@ Scripted demo:
   0.14 m left and right of their midline, each with an 8 mm square hole in its top.
 - **Probes:** a red one in the left holder and a black one in the right, standing tip down. Each is 140 mm long,
   30 g: a 2 mm steel tip 15 mm long, a 6 mm shroud 10 mm long (in the holder's hole), a 16 mm finger guard resting
-  on the holder's top, a 10 mm handle 100 mm long and a 6 mm cap. Their leads are left out (see fidelity).
+  on the holder's top, a 10 mm handle 100 mm long and a 6 mm cap. Each has a 1 m silicone lead to the meter.
+- **Meter and test voltage (real-world trial):** a digital multimeter on its DC volts range (20 V), the probes plugged
+  into it by their leads' 4 mm plugs; an isolated 12 V DC source (a 12 V plug-in adapter, extra-low voltage) wired
+  into the clamps of the L block (+) and the N block (-) through their wire entries. No other block is wired. The
+  meter reads 12 V only while both tips are on their clamps, L and N; with either tip off its clamp it reads 0 V.
 
 ## Scoring
 
@@ -63,23 +67,23 @@ At the end of the episode:
 | credit | condition |
 | --- | --- |
 | 0 | a probe tip **entered any other terminal's test opening** at any point (1 mm or more below its mouth, inside its bore) |
-| 1.0 | otherwise, **measured**: both tips seated in the L and N openings (one in each, 3 mm or more below the mouth, inside the bore) and both probes held, without a break for 1 s (success) |
-| 0.5 | otherwise, one tip was seated in the L or N opening while its probe was held, at some point |
+| 1.0 | otherwise, **measured**: both tips on their clamps, the red in L and the black in N or the other way round (each tip in its opening's bore, down on the clamp at its floor, 8 mm below the mouth, within 0.7 mm), both probes held, without a break for 1 s (success) |
+| 0.5 | otherwise, one tip was on the clamp of L or N while its probe was held, at some point |
 | 0.25 | otherwise, both probes were lifted 30 mm or more out of their holders at some point |
 | 0 | otherwise |
 
+- **On the clamp:** the tip touches the terminal's metal clamp at the floor of its test opening, which is what
+  completes the circuit; in the simulation, the tip within 0.7 mm of the opening's floor, inside its bore.
 - **Held:** a closed gripper on the probe's handle: the gripper's centre within 4 mm of the probe's axis, along the
   handle, its pads closed to the handle's width plus 1.5 mm at most. (A probe left standing in an opening on its own
-  does not count: in a real trial the probe is in the robot's hand.)
-- Seated means the tip is down on the clamp, where a real probe makes contact; it is read from the probe's pose.
+  does not count: the probe is in the robot's hand.)
 - The task file keeps a record, every control step (20 Hz), of each tip's position, which opening it is in and how
   deep, whether its probe is held, how far it was lifted, any entry into a wrong opening, and how long both tips
-  have been seated and held without a break; the score is read from it.
+  have been on their clamps and held without a break; the score is read from it.
 
-In a real trial these are read from a video of the strip (top and side) and the robot's grippers: which opening each
-tip went into and when, and whether both stayed in for a second with the probes in the grippers. A multimeter on the
-probes' leads, with the L and N terminals at a test voltage, confirms the measurement (it reads only with both tips on
-their clamps).
+In a real trial: the meter's display gives full credit (12 V for 1 s without a break, the probes in the grippers);
+a video of the strip (top and side) shows which opening each tip went into, and a tip on one clamp alone (half
+credit) is seen on the video and checked by the meter's continuity mode afterwards if needed.
 
 ## Measured results
 
@@ -87,10 +91,9 @@ Scripted demo, 20 Hz control, object jitter 0, run limit 1,200 steps.
 
 | run | score | notes |
 | --- | --- | --- |
-| GPU (`cuda:0`) | **1.0** (success at step 562) | both probes lifted out by step 202; the red tip went into L at the first try (seated at step 349); the black tip found N at its third try (the first two landed on the block's top beside the opening); both seated and held from step 546, success 1 s later; no tip entered any other opening |
-| CPU | **1.0** (success at step 379) | the same sequence, both tips in at the first try |
-| GPU, `--variant wrong` | **0** (800 steps) | the black tip entered the opening of the beige block two from N at step 544 (wrong opening): 0 from then on |
-| CPU, `--variant wrong` | **0** (800 steps) | the same, at step 316; it then went on into N, with the red tip in L: the demo's final state, still 0 |
+| GPU (`cuda:0`) | **1.0** (success at step 576) | both probes lifted out by step 202; the red tip went into L at the first try, the black tip found N at its third try (the first two landed on the block's top beside the opening); each pressed down onto its clamp (7.99 mm below the mouth); both on their clamps and held for 1 s; no tip entered any other opening |
+| CPU | **1.0** (success at step 393) | the same sequence, both tips in at the first try, both on their clamps (8.0 mm) |
+| CPU, `--variant wrong` | **0** (800 steps) | the black tip entered the opening of the beige block two from N (wrong opening): 0 from then on |
 | CPU, `--variant hold` | 0.0 (100 steps) | no arm moves |
 
 Dream-1, run with the command above (and `--policy dream -E cam_width=320 -E cam_height=176`), scored 0.0: in 1,200
@@ -105,8 +108,8 @@ closes on it 80 mm above the tip (near its centre of mass, so it does not pivot 
 its holder, carries it over its terminal's test opening, lines its measured gripper position up over the opening to
 within 0.4 mm, and lowers the tip at 6 mm/s, its command never more than 3 mm ahead of the gripper, until the tip is
 5 mm below the opening's mouth. It feels for the opening: if the gripper stops descending early (the tip is on the
-block's top, beside the opening), it lifts the tip 4 mm, shifts 1 or 2 mm and tries again, up to nine times. Then it
-holds. The left arm takes the red probe to L, the right arm the black probe to N.
+block's top, beside the opening), it lifts the tip 4 mm, shifts 1 or 2 mm and tries again, up to nine times. Once the
+tip is in, it goes on down until the gripper stops (the tip is on the clamp) and holds it there, pressing lightly. The left arm takes the red probe to L, the right arm the black probe to N.
 
 `--variant wrong` checks the scoring: the right arm first puts the black probe into a beige terminal two blocks from
 N, takes it out, then puts it into N as in the demo. It scores 0 from the moment the tip enters the wrong opening.
@@ -130,19 +133,9 @@ in code (`probe_parts.py`, `tb_parts.py`); no meshes, scans or CAD files are use
 
 ## Fidelity: what is simplified
 
-- The probes have no leads. Real probes trail about 1 m of cable each to the meter, which pulls on them a little;
-  here they are free.
-- No electricity is simulated: a tip counts as making contact when it is seated on the opening's floor (the clamp).
-- The terminal blocks are fixed colliders of a generic design (not latched parts that could come off); the test
-  openings are square, real ones are usually round.
-- The probe's collision shapes are square sections (a round one slipped in the simulated gripper).
+- The probes' leads are not simulated (about 1 m of light silicone cable each, from the probe's end to the meter).
+- No electricity is simulated: contact is the tip on the clamp, read from the probe's pose.
+- The terminal blocks are fixed colliders of a generic design; the test openings are square (2.6 mm), sized for the
+  2 mm tips.
+- The probe's collision shapes are square sections.
 - Friction: probe handle rubber 0.9, other plastic 0.4, housings polyamide 0.35, robot fingers PhysX default 0.5.
-
-## Known weak points
-
-- L and N are always the same two blocks; a policy that memorises the layout need not tell the blocks apart.
-- The two terminals are 187 mm apart: closer than about 17 cm, the two arms' wrists touch and push each other off
-  their openings.
-- From the fixed top camera the openings are a pixel or two wide; the wrist cameras show them.
-- `tb_parts.install()` wraps two functions of `yam_arena.scene`; a yam_arena update that changes them stops the task
-  with an error.
