@@ -1,19 +1,18 @@
 """Scripted two-arm demo for the rail-cutter task. It uses only the task's known starting layout and the robot's own
 joint readings (the measured gripper positions), never the simulator's object poses.
 
-    python demo.py                    # left arm sets the rail at 250 mm and holds it; right arm pulls the lever: 1.0
+    python demo.py                    # set the rail at 250 mm, shut the clamp, press the cut button: 1.0
     python demo.py --variant short    # the rail is set 3 mm short (247 mm) before the cut: 0.5
-    python demo.py --variant wiggle   # the rail is pushed on and back while the blade is in it: 0.5
-    python demo.py --variant nocut    # the rail is set at 250 mm, the lever is never pulled: 0.25
-    python demo.py --variant hold     # no arm moves: 0.0
+    python demo.py --variant noclamp  # the button is pressed with the clamp open (the cutter does not cut): 0.25
+    python demo.py --variant nocut    # the rail is set at 250 mm and clamped, the button never pressed: 0.25
+    python demo.py --variant hold     # no arm moves: 0
     python demo.py --device cpu       # CPU physics, ~3x faster, for quick checks
 
 - left arm: the gripper pointing down, its fingers closing across the rail, grips the rail by its lips 100 mm from
   its left end, slides it 290 mm toward the outfeed (lining its measured gripper position up to within 0.3 mm), which
   puts the rail's right end 250 mm past the blade, and holds it there;
-- right arm: once the rail is set, comes down over the lever's handle, grips it across its sides, pulls it down
-  along its arc (the command leading the handle downward) until the gripper is where the handle is with the lever
-  level, holds a moment, lets the lever rise again, and lets go.
+- right arm: once the rail is set, grips the clamp's handle across its sides, pushes it down along its arc past its
+  over-centre point until it is shut on the rail, lets go, then presses the cut button with its closed fingertips.
 
 Writes ``result.json``, ``steps.jsonl`` and (unless ``--no-video``) one video per camera to ``--out``.
 """
@@ -35,7 +34,7 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 TASK = HERE / "task.py"
 INSTRUCTION = "Cut a 250 mm length off the right end of the rail with the rail cutter."
-VARIANTS = ("full", "hold", "short", "wiggle", "nocut")
+VARIANTS = ("full", "hold", "short", "noclamp", "nocut")
 CAMERAS = ("top_cam", "left_cam", "right_cam")
 CONTROL_HZ = 20.0
 DT = 1.0 / CONTROL_HZ
@@ -47,10 +46,11 @@ OPEN = 0.5  # gripper opening (0..1 of 94 mm): ~47 mm between the pads, around t
 RAIL_GRIP_FROM_END = 100 * MM  # grip the rail this far from its left end
 PAD_BELOW_LIPS = 1.8 * MM  # the pad tips this far below the lips' tops (on the lips, clear of the guide fences)
 SHORT_BY = 3 * MM  # "short": set the rail this much short of the mark
-WIGGLE = 6 * MM  # "wiggle": swing the command this far on and back while the blade is in the rail (the rail moves less)
 HANDLE_OPEN = 0.35  # ~33 mm between the pads, around the 22 mm handle
 PULL_RATE_DEG = 15.0  # sweep the handle's target down its arc this fast
-LEAD_DOWN = 15 * MM  # the command leads the handle's arc point downward by up to this (the lever pushes back)
+LEAD_DOWN = 15 * MM  # the command leads the handle's arc point downward by up to this (the clamp's spring pushes back)
+CLAMP_DOWN_DEG = 3.0  # push the clamp's handle down until the gripper says the clamp is this far from level
+BUTTON_PUSH = 16 * MM  # press the button: the command this far below its cap's top (it stops at 5 mm in; the arm gives)
 AFTER_SUCCESS_S = 3.0
 
 
@@ -203,10 +203,10 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
 
     def handle_world(deg):
         x, z = ct.handle_point(deg)
-        return c0 + np.array([x, 0.0, z])
+        return c0 + np.array([x, ct.CLAMP_Y, z])
 
     def lever_deg_from(p):
-        """The lever's angle the gripper's position implies (the handle's middle is between the pads)."""
+        """The clamp's angle the gripper's position implies (the handle's middle is between the pads)."""
         return math.degrees(math.atan2(p[2] - (c0[2] + ct.PIVOT[1]), (c0[0] + ct.PIVOT[0]) - p[0]))
 
     def rail_script():
@@ -231,47 +231,50 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         report["rail_set_step"] = world["step"]
         flags.add("rail_set")
         phase["left"] = "hold the rail"
-        if variant == "wiggle":
-            yield from wait_for(arm, "blade_in", "hold the rail")
-            here = arm.pos.copy()
-            yield from move(arm, here - np.array([0.0, WIGGLE, 0.0]), 0.3, label="push the rail on")
-            yield from move(arm, here, 0.3, label="pull it back")
-            phase["left"] = "hold the rail"
         yield from idle()
 
     def lever_script():
         arm = arms["right"]
-        if variant in ("hold", "nocut"):
+        if variant == "hold":
             phase["right"] = "idle"
             yield from idle()
         yield from wait_for(arm, "rail_set", "wait for the rail")
-        h = handle_world(ct.UP_DEG) + np.array([0.0, 0.0, PAD_TIP])
-        yield from move(arm, h + (0, 0, 0.05), 2.0, grip=HANDLE_OPEN, rot=arm.down, label="over the handle")
-        yield from settle_until(arm, h + (0, 0, 0.05), "line up over the handle")
-        corr = arm.pos - (h + (0, 0, 0.05))
-        yield from move(arm, h + corr, 1.2, label="down to the handle")
-        yield from settle_until(arm, h, "line up on the handle")
-        yield from move(arm, arm.pos, 0.8, grip=0.0, label="grip the handle")
-        phase["right"] = "pull the lever down"
-        a = ct.UP_DEG
-        for _ in range(round(10.0 / DT)):
-            p = measured_tcp("right")[0]
-            implied = lever_deg_from(p - np.array([0.0, 0.0, PAD_TIP]))
-            if implied <= 1.0:
-                break
-            if implied <= ct.TOUCH_DEG - 2.0:
-                flags.add("blade_in")
-            a = max(a - PULL_RATE_DEG * DT, -5.0)
-            lead = min(LEAD_DOWN, max(0.0, (ct.UP_DEG - a) / ct.UP_DEG * LEAD_DOWN))
-            arm.pos = handle_world(a) + np.array([0.0, 0.0, PAD_TIP - lead])
-            yield
-        report["lever_down_step"] = world["step"]
-        yield from move(arm, arm.pos, 0.5, label="hold it down")
-        for a2 in np.linspace(5.0, ct.UP_DEG, round(2.0 / DT)):  # let it rise along its arc
-            arm.pos = handle_world(a2) + np.array([0.0, 0.0, PAD_TIP])
-            yield
-        yield from move(arm, arm.pos, 0.6, grip=HANDLE_OPEN, label="let go")
-        yield from move(arm, arm.pos + (0, 0, 0.05), 1.0, label="away")
+        if variant != "noclamp":
+            # shut the clamp: grip its handle, push it down past its over-centre point, let go (it stays shut)
+            h = handle_world(ct.UP_DEG) + np.array([0.0, 0.0, PAD_TIP])
+            yield from move(arm, h + (0, 0, 0.05), 2.0, grip=HANDLE_OPEN, rot=arm.down, label="over the clamp's handle")
+            yield from settle_until(arm, h + (0, 0, 0.05), "line up over the handle")
+            corr = arm.pos - (h + (0, 0, 0.05))
+            yield from move(arm, h + corr, 1.2, label="down to the handle")
+            yield from settle_until(arm, h, "line up on the handle")
+            yield from move(arm, arm.pos, 0.8, grip=0.0, label="grip the handle")
+            phase["right"] = "shut the clamp"
+            a = ct.UP_DEG
+            for _ in range(round(8.0 / DT)):
+                p = measured_tcp("right")[0]
+                if lever_deg_from(p - np.array([0.0, 0.0, PAD_TIP])) <= CLAMP_DOWN_DEG:
+                    break
+                a = max(a - PULL_RATE_DEG * DT, -5.0)
+                lead = min(LEAD_DOWN, max(0.0, (ct.UP_DEG - a) / ct.UP_DEG * LEAD_DOWN))
+                arm.pos = handle_world(a) + np.array([0.0, 0.0, PAD_TIP - lead])
+                yield
+            report["clamp_shut_step"] = world["step"]
+            yield from move(arm, arm.pos, 0.6, grip=HANDLE_OPEN, label="let go of the clamp")
+            yield from move(arm, arm.pos + (0, 0, 0.06), 1.0, label="away from the clamp")
+        if variant == "nocut":
+            phase["right"] = "done"
+            report["script_done_step"] = world["step"]
+            yield from idle()
+        # press the cut button: the gripper closed, pointing down, its fingertips on the button's cap
+        top = c0 + ct.button_top() + np.array([0.0, 0.0, PAD_TIP])
+        yield from move(arm, top + (0, 0, 0.04), 2.0, grip=0.0, rot=arm.down, label="over the cut button")
+        yield from settle_until(arm, top + (0, 0, 0.04), "line up over the button")
+        corr = arm.pos - (top + (0, 0, 0.04))
+        yield from move(arm, top + corr + (0, 0, -BUTTON_PUSH), 1.0, label="press the cut button")
+        yield from move(arm, arm.pos, 0.5, label="press the cut button")
+        report["button_step"] = world["step"]
+        yield from move(arm, arm.pos + (0, 0, 0.05), 0.8, label="off the button")
+        yield from move(arm, arm.pos, 2.0, label="wait for the stroke")
         phase["right"] = "done"
         report["script_done_step"] = world["step"]
         yield from idle()
@@ -295,7 +298,9 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         world["states"] = object_states(emb._env, emb.task.names)
         st = world["states"]
         row = {"step": step, "left": phase["left"], "right": phase["right"], "score": res.info.get("score"),
-               "success": res.info.get("success"), "lever_deg": round(st["cutter"].lever_deg, 2),
+               "success": res.info.get("success"), "clamp_deg": round(st["cutter"].clamp_deg, 2),
+               "button_mm": round(st["cutter"].button_mm, 2), "blade_mm": round(st["cutter"].blade_mm, 1),
+               "strokes": st["cutter"].strokes,
                "rail_past_mm": round(task._rail_end(st)[0] / MM, 2), "in_die": task._rail_end(st)[1], "rail": _rail_pose(task, st),
                "cut": task.RECORD.get("cut")}
         for side in ("left", "right"):

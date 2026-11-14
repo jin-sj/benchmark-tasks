@@ -1,11 +1,17 @@
-"""On the station table, in front of the arms: a bench rail cutter, fixed to the table, with a blue cast body. A DIN
-rail runs through it left to right: an infeed ledge on the left (680 mm long, with two low guide fences along it that
-keep the rail straight), a die in the middle (a 37 x 9.5 mm opening the rail fits through, flared at its mouth) with
-the blade's slot, and an outfeed ledge on the right. On the outfeed ledge's top, on the side nearer the arms, a length
-scale measured from the blade: a mark every 10 mm, longer marks every 50 mm and the longest every 100 mm, to 300 mm.
-Behind the die, a hinge carries the cutting lever: a steel arm with a red handle, 205 mm long, pointing toward the
-arms and resting raised at 45 degrees on a spring. Pulling the handle down until the lever is level drives the blade
-through the die (about 10 N at the handle).
+"""On the station table, in front of the arms: a powered bench DIN-rail cutter, fixed to the table, its body blue. A
+DIN rail runs through it left to right: an infeed ledge on the left (680 mm long, with two low guide fences along it
+that keep the rail straight), a die in the middle (a 37 x 9.5 mm opening the rail fits through, flared at its mouth)
+under the cutting head (a dark grey housing with a yellow guard band; the blade inside it), and an outfeed ledge on
+the right. On the outfeed ledge's top, on the side nearer the arms, a length scale measured from the blade: a mark
+every 10 mm, longer marks every 50 mm and the longest every 100 mm, to 300 mm. There is no length stop.
+
+On the infeed side, 45 mm from the blade, a toggle hold-down clamp: a steel arm hinged behind the rail, 205 mm long,
+with a red handle toward the arms and a rubber pad over the rail; it rests open, raised at 45 degrees. Pushing its
+handle down past 20 degrees snaps it shut, its pad holding the rail down; lifting it back opens it.
+
+At the front, on the outfeed side, a console with a red cut button on top. Pressing the button (3 mm in) runs one
+cutting stroke: the blade comes down through the die in 1 s and goes back up. The cutter only cuts with the clamp
+shut; with it open the button does nothing.
 
 A loose steel TS35 x 7.5 top-hat DIN rail, 600 mm long, open side up, lies on the infeed ledge between the fences,
 its right end 40 mm short of the blade.
@@ -50,7 +56,7 @@ OBJECTS = [ct.part("cutter", CUTTER_ORIGIN), tp.part("rail", "rail", RAIL_ORIGIN
 # -- scoring --------------------------------------------------------------------------------------------------------
 TARGET = 250 * MM  # the length to cut
 EXACT = 1 * MM  # full credit: within this of the target ...
-STILL = 0.5 * MM  # ... and the rail moved less than this along the cutter while the blade went through it
+STILL = 0.5 * MM  # ... and the rail moved less than this along the cutter during the stroke
 CLOSE = 5 * MM  # partial credit: within this
 SET_S = 1.0  # set: the rail's end kept within CLOSE of the mark, in the die, this long without a break
 CONTROL_HZ = 20.0  # the record runs once per control step
@@ -80,34 +86,34 @@ def _record(base, states) -> None:
     step = int(base.episode_length_buf[0])
     if not RECORD or step <= 1 or step < RECORD.get("step", 0):
         RECORD.clear()
-        RECORD.update(cut=None, best=None, set_run=0, set_ok=False, during=None, step=step)
+        RECORD.update(cut=None, best=None, set_run=0, set_ok=False, during=None, stroke=0, step=step)
     RECORD["step"] = step
     if "rail" not in states or "cutter" not in states:
         return
     past, in_die = _rail_end(states)
-    deg = states["cutter"].lever_deg
+    c = states["cutter"]
     if RECORD["cut"] is None:
         err = abs(past - TARGET)
         if in_die:
             RECORD["best"] = err if RECORD["best"] is None else min(RECORD["best"], err)
         RECORD["set_run"] = RECORD["set_run"] + 1 if in_die and err <= CLOSE else 0
         RECORD["set_ok"] = RECORD["set_ok"] or RECORD["set_run"] >= round(SET_S * CONTROL_HZ)
-    if RECORD["cut"] is None and deg <= ct.TOUCH_DEG and in_die:  # the blade is in the rail: track its movement
-        lo, hi = RECORD["during"] or (past, past)
-        RECORD["during"] = (min(lo, past), max(hi, past))
-    if RECORD["cut"] is None and deg <= ct.CUT_DEG:  # the stroke is complete: the first one is the cut
-        lo, hi = RECORD["during"] or (past, past)
-        RECORD["cut"] = {"in_die": in_die, "length": past, "moved": hi - lo, "step": step}
-    if RECORD["cut"] is None and deg > ct.TOUCH_DEG:
-        RECORD["during"] = None  # the lever went back up before the blade got through: start the stroke afresh
+        if c.strokes > RECORD["stroke"]:  # a stroke has started: track the rail's movement through it
+            RECORD["stroke"], RECORD["during"] = c.strokes, (past, past)
+        if RECORD["during"] is not None:
+            lo, hi = RECORD["during"]
+            RECORD["during"] = (min(lo, past), max(hi, past))
+            if c.blade_mm >= ct.STROKE / MM - 1.0:  # the blade at the bottom of its stroke: the cut
+                lo, hi = RECORD["during"]
+                RECORD["cut"] = {"in_die": in_die, "length": past, "moved": hi - lo, "step": step}
 
 
 tp.STEP_HOOKS.append(_record)
 
 
 def cut() -> dict | None:
-    """The first full stroke of the lever: whether the rail was in the die, the cut length, and how far the rail
-    moved while the blade went through it."""
+    """The first stroke of the blade: whether the rail was in the die, the cut length, and how far the rail moved
+    along the cutter during the stroke (from the button's starting it to the blade's reaching the bottom)."""
     return RECORD.get("cut")
 
 
@@ -121,7 +127,7 @@ def score(objects) -> float:
     """At the end of the episode: 1.0 cut 250 mm within 1 mm with the rail held still (moved under 0.5 mm) while the
     blade went through it; 0.5 cut within 5 mm; 0.25 no such cut, but before the cut the rail lay in the die with its
     end within 5 mm of the 250 mm mark for 1 s without a break (set at the mark); 0 otherwise. Only the first full
-    stroke of the lever counts (a cut cannot be redone)."""
+    stroke of the blade counts (a cut cannot be redone)."""
     if success(objects):
         return 1.0
     c = cut()
