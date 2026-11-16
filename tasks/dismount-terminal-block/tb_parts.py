@@ -158,6 +158,8 @@ SLOT_Z = (0.5 * MM, 9.0 * MM)  # ... and from z 0.5 to 9 mm
 SLOT_WIDTH = 1.6 * MM  # the slot between the cheek and the foot's tab (a 0.7 mm blade goes in)
 TAB_THICK = 1.6 * MM  # the foot's tab, outward of the slot
 SLOT_FLOOR = 0.0  # the slot's floor (the foot's tab turns in under the slot), its top at this height
+HOOK_SLOT_CHEEK = (30.0 * MM, 27.8 * MM)  # HOOK block: the cheek from x -30.0 to -27.8 mm (the housing's near end);
+# the slot from -31.6 to -30.0, the tab from -33.2 to -31.6 (the screwdriver's 3 mm shaft clears the housing by 1.5 mm)
 SNAP_SPRING = 1000.0  # N/m along the slide
 PAD_PROUD = 1.2 * MM  # a free pad's face below the housing's seat; latched it is squeezed to TOOTH_PLAY
 PAD_X = (13.6 * MM, 15.4 * MM)  # pads' extent across the rail (over the lip tops, 13.5..17.5)
@@ -336,6 +338,17 @@ def hook_shapes(body: str, look: str, y: float, collide: bool = True, feet: str 
         x1 = LIP_INNER - SHEET - ARM_PLAY * MM
         out.append(Shape(body, look, mat, (x1 - 0.4 * MM, y, -0.65 * MM), (0.8 * MM, 2 * FOOT_HALF_WIDTH, 1.7 * MM),
                          visible=False))
+    if RELEASE_SLOT and own:
+        # the release slot at the near (-x) end, open at the top for a flat screwdriver blade: a cheek on the housing,
+        # and on the sprung foot an L-shaped tab (an upright beyond the slot and a floor under it). A blade in the
+        # slot, levered outward, pushes the tab and with it the foot out from under the lip.
+        c0, c1 = HOOK_SLOT_CHEEK
+        t0 = c0 + SLOT_WIDTH
+        bmat = "polyamide" if collide else None
+        smat = "latch" if collide else None
+        out.append(_box(body, look, bmat, -c0, -c1, fw0, fw1, SLOT_Z[0], SLOT_Z[1]))
+        out.append(_box("foot_n", look, smat, -(t0 + TAB_THICK), -t0, fw0, fw1, SLOT_FLOOR - 1.0 * MM, SLOT_Z[1]))
+        out.append(_box("foot_n", look, smat, -t0, -c1, fw0, fw1, SLOT_FLOOR - 1.0 * MM, SLOT_FLOOR))
     for name, s, reach in (("foot_p", 1, HOOK_REACH), ("foot_n", -1, None)):
         fbody = name if own else body
         pieces = _foot_profile(False, reach)
@@ -480,9 +493,9 @@ def tray_shapes() -> list[Shape]:
 # -- screwdriver and its holder -------------------------------------------------------------------------------------
 # A flat-blade screwdriver (origin at the blade's tip, its axis along z): blade 3.5 x 0.7 mm, 10 mm long; shaft 5 mm
 # square (a round look), 65 mm; handle 20 mm square (a round look), 100 mm.
-BLADE = (0.7 * MM, 3.5 * MM, 10 * MM)
-SHAFT = (5.0 * MM, 75 * MM)
-HANDLE = (20.0 * MM, 100 * MM)
+BLADE = (1.0 * MM, 3.5 * MM, 10 * MM)  # 3.5 x 1.0 mm (0.7 mm passed through the foot's tab, runs 7-8)
+SHAFT = (3.0 * MM, 30 * MM)  # a short electrician's screwdriver, 3 mm shaft: the tip to the handle 30 mm ...
+HANDLE = (20.0 * MM, 45 * MM)  # ... a 45 mm handle (standing in its holder, its top within the arms' reach)
 SCREWDRIVER_MASS = 0.06
 HOLDER = (40 * MM, 9 * MM, 50 * MM, 5 * MM)  # outer side, hole side, height, floor thickness
 

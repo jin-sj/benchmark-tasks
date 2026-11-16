@@ -34,20 +34,21 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 TASK = HERE / "task.py"
 INSTRUCTION = (
-    "Take the blue terminal block off the DIN rail and put it in the tray. Hold the rail down with one arm while the "
-    "other takes the block off, and leave the two beige blocks where they are."
+    "Take the blue terminal block off the DIN rail with the screwdriver and put it in the tray, and leave the two beige "
+    "blocks where they are."
 )
-VARIANTS = ("full", "held")
+VARIANTS = ("full", "held", "no_lever")
 CAMERAS = ("top_cam", "left_cam", "right_cam")
 CONTROL_HZ = 20.0
 DT = 1.0 / CONTROL_HZ
-MAX_STEPS = 1200
+MAX_STEPS = 2400  # the task's run limit (the screwdriver release takes longer than the old push)
 MM = 1e-3
 
 PAD_TIP = 0.013  # pad tips beyond the TCP
 OPEN = 0.35  # gripper opening (0..1 of 94 mm): ~33 mm between the pads
 GRASP_DEPTH = 18 * MM  # pad tips this far below the block's top
-GRIP_BACK = 0 * MM  # grip this far from the block's origin (over the rail's centreline) toward its near end
+GRIP_BACK = 0 * MM  # (unused)
+GRIP_FAR = 30 * MM  # grip this far from the block's origin toward its far (hook) end: clear of the screwdriver at the near end
 HOLD_AT = 170 * MM  # the left arm holds the rail here (rail frame y): 15 cm from the blue block, so the two grippers
 # (each ~10 cm wide) stay apart. Pulling the block up tips the rail about its left end: the nearer the hold is to the
 # block (the further from that end), the better it resists; 17 cm let the rail tip, 13 cm held it
@@ -69,6 +70,21 @@ UNHOOKED = 3.5 * MM  # then slide toward the far side until the block is this fa
 # hook's 2.5 mm tooth is out from under its lip)
 SLIDE_RATE, SLIDE_MAX = 10 * MM, 40 * MM
 TRAY_DROP = 15 * MM  # let go with the block's lowest point this far above the tray floor
+# the screwdriver (left arm)
+SD_OPEN = 0.35  # ~33 mm: open round the 20 mm handle
+SD_GRIP_BELOW_TOP = 12 * MM  # pad tips this far below the handle's top
+SD_LIFT = 0.07  # lifted this far out of the holder
+SLOT_ABOVE = 12 * MM  # the blade's tip first this far above the slot's floor ...
+SLOT_IN = 1.5 * MM  # ... then down to this
+SD_CENTRE_TOL, SD_CENTRE_TRIES = 0.25 * MM, 6
+LEVER_OPEN = 2.4 * MM  # lever the sprung foot out this far (its tooth clears the lip's edge at 2.0 mm)
+LEVER_RATE, LEVER_MAX = 3 * MM, 30 * MM  # the blade's push toward the arms leads (the arm is soft; 12 mm opened
+# the foot only 1 mm, run 6)
+GRIP_LEAN = math.radians(20.0)  # the right hand leans so its body is beyond the block's far end (upright, it met the
+# left hand's screwdriver over the block, runs 3-6)
+SD_FOLLOW = 8 * MM  # while the right arm tips the block, the blade follows the near end up this far
+SD_LEAN = math.radians(6.0)  # the screwdriver held leaning away from the block (its handle toward the arms): the two
+# hands met over the block when it was upright, runs 3-5
 AFTER_SUCCESS_S = 3.0
 
 
@@ -197,67 +213,105 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
             arm.pos = target + corr
             yield
 
-    # -- left arm: hold the rail down ---------------------------------------------------------------------
+    # -- left arm: the screwdriver ---------------------------------------------------------------------------
+    def driver():
+        """(blade tip, rotation) of the screwdriver (its origin is the blade's tip)."""
+        return task._origin(world["states"]["screwdriver"], np.array(tp.local_center("screwdriver")))
+
+    def slot_point(z: float) -> np.ndarray:
+        """The middle of the blue block's release slot, z above the slot's floor (world)."""
+        o, r = block()
+        x = -(tp.HOOK_SLOT_CHEEK[0] + tp.SLOT_WIDTH / 2)
+        return o + r @ np.array([x, 0.0, tp.SLOT_FLOOR + z])
+
+    def tip_to(arm: Arm, target, tries: int, label: str, xy_only=False):
+        """Bring the blade's tip to ``target`` by the measured tip (correct, settle, measure)."""
+        err = np.zeros(3)
+        for k in range(tries):
+            tip, _ = driver()
+            err = np.asarray(target) - tip
+            if xy_only:
+                err[2] = 0.0
+            if np.linalg.norm(err[:2]) < SD_CENTRE_TOL and (xy_only or abs(err[2]) < SD_CENTRE_TOL):
+                break
+            yield from move(arm, arm.pos + err, 0.5, label=label)
+            yield from move(arm, arm.pos, 0.4, label=label + ": settle")
+        return float(np.linalg.norm(err[:2]))
+
     def left_script():
         arm = arms["left"]
-        # grip the rail by its two lip edges (fingers closing across it) in the free span between the left beige block
-        # and the left bracket, leaned so the wrist stays clear of the right arm
-        if HOLD_STYLE == "block":
-            # press the blue block's far (hook) end down with closed fingertips, coming in from the far side, while
-            # the right arm lifts the near end: a couple that tips the block about its hook without lifting the rail
-            arm.grip = 0.0
-            # keep the wrist's present turn (a 90 degree turn here flips the arm through the strip); only lean it
-            down = rot_y(math.radians(PRESS_LEAN)) @ arm.down
-            approach = down[:, 2]
-            yield from wait_for(arm, "gripped", "wait for the right arm's grip")
-            o, r = block()
-            tip = o + r @ np.array([PRESS_AT, 0.0, tp.BLOCK_HEIGHT])
-            above = tip - PAD_TIP * approach - 0.03 * approach
-            yield from move(arm, above + (0, 0, 0.08), 2.5, grip=0.0, rot=down, label="high over the block's far end")
-            yield from move(arm, above, 1.2, label="over the block's far end")
-            yield from move(arm, tip - PAD_TIP * approach, 1.0, label="onto the block's far end")
-            yield from move(arm, tip - PAD_TIP * approach + BLOCK_PRESS * approach, 1.0, label="press it down")
-            flags.add("pressing")
-            yield from wait_for(arm, "released", "hold it down")
-            yield from move(arm, arm.pos - 0.06 * approach, 1.0, label="lift away")
-            yield from move(arm, arm.pos + (0.0, 0.08, 0.04), 1.5, label="out of the way")
+        rep = report.setdefault("screwdriver", {})
+        if variant == "no_lever":  # the screwdriver stays in its holder
+            phase["left"] = "idle"
+            flags.add("foot_open")
             flags.add("left_clear")
-            phase["left"] = "done"
             while True:
                 yield
-        if HOLD_STYLE == "press":  # closed fingertips pressed into the rail's channel, as in the first task
-            arm.grip = 0.0
-            down = rot_z(rail_yaw()) @ rot_x(HOLD_LEAN) @ rot_z(-math.pi / 2) @ arm.down
-            # on the near lip (toward the arms): pulling the block's near end up tries to roll the rail over its far
-            # edge, and a press on the near lip resists that best
-            z = tp.SHEET if abs(HOLD_X) < tp.LIP_INNER - tp.SHEET else tp.RAIL_HEIGHT  # channel floor, or a lip
-            tcp = rail_point((-HOLD_X, HOLD_AT, z)) - PAD_TIP * down[:, 2]
-            yield from move(arm, tcp + (0, 0, 0.06), 2.5, grip=0.0, rot=down, label="to the hold point")
-            yield from move(arm, tcp + (0, 0, 0.012), 1.5, label="down to the rail")
-            yield from move(arm, tcp - (0, 0, HOLD_PRESS), 1.0, label="press the rail down")
-            phase["left"] = "holding the rail"
-            while True:
-                yield
-        down = rot_z(rail_yaw()) @ rot_x(HOLD_LEAN) @ rot_z(math.pi / 2) @ arm.down
-        tip = rail_point((0.0, HOLD_AT, tp.RAIL_HEIGHT - HOLD_DEPTH))
-        tcp = tip - PAD_TIP * down[:, 2]
-        yield from move(arm, tcp + (0, 0, 0.06), 2.5, grip=HOLD_OPEN, rot=down, label="to the hold point")
-        yield from move(arm, tcp, 1.5, label="down around the rail")
-        # centre the fingers on the rail before closing (a finger landing first would shove the loose rail)
-        yield from settle(arm, rail_point((0.0, HOLD_AT, tp.RAIL_HEIGHT - HOLD_DEPTH)) - PAD_TIP * down[:, 2], 1.0,
-                          "centre on the rail")
-        yield from move(arm, arm.pos, 1.5, grip=0.0, label="grip the rail's edges")
-        phase["left"] = "holding the rail"
+        tip, r = driver()
+        top = tip + r @ np.array([0.0, 0.0, tp.SHAFT[1] + tp.HANDLE[1]])
+        g = top - np.array([0.0, 0.0, SD_GRIP_BELOW_TOP]) + np.array([0.0, 0.0, PAD_TIP])
+        hand = rot_z(math.pi / 2) @ arm.down  # fingers closing across the rail: the hand narrow toward the block
+        yield from move(arm, g + (0, 0, 0.05), 2.5, grip=SD_OPEN, rot=hand, label="over the screwdriver")
+        yield from move(arm, g, 1.2, label="down round its handle")
+        yield from settle(arm, g, 0.6, "line up on the handle")
+        yield from move(arm, arm.pos, 0.6, grip=0.0, label="grip the handle")
+        yield from move(arm, arm.pos + (0, 0, SD_LIFT), 1.2, label="lift it out of the holder")
+        yield from move(arm, arm.pos, 0.8, rot=rot_y(-SD_LEAN) @ arm.rot, label="lean it away from the block")
+        rep["picked"] = bool(driver()[0][2] > tip[2] + 0.04)
+        # (first, before the right hand comes: coming down beside the right hand's grip, the two hands met and the
+        # screwdriver was knocked over in the grip, run 2)
+        # over the release slot, the blade's tip lined up on the slot's middle by its measured position
+        tip, _ = driver()
+        above = slot_point(SLOT_ABOVE)
+        yield from move(arm, arm.pos + (above - tip) + (0, 0, 0.03), 2.0, label="over the release slot")
+        yield from move(arm, arm.pos - (0, 0, 0.03), 1.0, label="down over the slot")
+        rep["centre_err_mm"] = round((yield from tip_to(arm, slot_point(SLOT_ABOVE), SD_CENTRE_TRIES,
+                                                        "line the blade up over the slot")) / MM, 3)
+        # into the slot, keeping it lined up
+        tip, _ = driver()
+        yield from move(arm, arm.pos + (slot_point(SLOT_IN) - tip), 1.2, label="blade into the slot")
+        yield from tip_to(arm, slot_point(SLOT_IN), 2, "line up in the slot", xy_only=True)
+        yield from move(arm, arm.pos, 0.4, label="settle in the slot")
+        tip, _ = driver()
+        rep["in_slot_mm"] = [round(float(v) / MM, 2) for v in (tip - slot_point(0.0))]
+        # lever: the blade pushes the foot's tab toward the arms (the command leads) until the foot is out
+        base_pos = arm.pos.copy()
+        lead = 0.0
+        phase["left"] = "lever the foot out"
+        for _ in range(round(5.0 / DT)):
+            if on_rail()["feet_spread"][1] >= LEVER_OPEN:
+                break
+            lead = min(lead + LEVER_RATE * DT, LEVER_MAX)
+            arm.pos = base_pos - np.array([lead, 0.0, 0.0])
+            yield
+        rep["lever_lead_mm"], rep["foot_spread_mm"] = round(lead / MM, 1), round(on_rail()["feet_spread"][1] / MM, 2)
+        rep["open_step"] = world["step"]
+        flags.add("foot_open")
+        yield from wait_for(arm, "gripped", "hold the foot out")
+        # follow the near end up while the right arm tips the block (the foot stays out), then pull the blade out
+        yield from wait_for(arm, "tipping", "hold the foot out")
+        yield from move(arm, arm.pos + (0, 0, SD_FOLLOW), 1.3, label="follow the near end up")
+        yield from wait_for(arm, "tipped", "hold")
+        yield from move(arm, arm.pos + (0.01, 0, 0.04), 1.0, label="blade out of the slot")
+        yield from move(arm, arm.pos + (-0.04, 0.10, 0.02), 1.5, label="out of the way")
+        flags.add("left_clear")
+        phase["left"] = "done"
         while True:
             yield
 
     # -- right arm: take the blue block off, into the tray -------------------------------------------------
     def right_script():
         arm = arms["right"]
-        yield from move(arm, arm.pos, 3.5, label="wait for the rail to be held")  # the left arm gets there first
         o, r = block()
-        g = o + r @ np.array([-GRIP_BACK, 0.0, tp.BLOCK_HEIGHT - GRASP_DEPTH]) + np.array([0, 0, PAD_TIP])
-        yield from move(arm, g + (0, 0, 0.06), 2.5, grip=OPEN, rot=arm.down, label="over the blue block")
+        g = o + r @ np.array([GRIP_FAR, 0.0, tp.BLOCK_HEIGHT - GRASP_DEPTH]) + np.array([0, 0, PAD_TIP])
+        # 1. the left arm levers the sprung foot out with the screwdriver first (the right arm waits where it starts:
+        # waiting over the block, the two hands met, run 3)
+        yield from wait_for(arm, "foot_open", "wait for the foot to be levered out")
+        o, r = block()
+        lean = rot_y(GRIP_LEAN) @ arm.down
+        approach = lean[:, 2]
+        g = o + r @ np.array([GRIP_FAR, 0.0, tp.BLOCK_HEIGHT - GRASP_DEPTH]) - PAD_TIP * approach
+        yield from move(arm, g + (0, 0, 0.06), 2.5, grip=OPEN, rot=lean, label="over the blue block")
         yield from move(arm, g + (0, 0, 0.012), 1.2, label="down near it")
         yield from settle(arm, g + (0, 0, 0.012), 0.8, "line up over it")
         corr = arm.pos - (g + (0, 0, 0.012))
@@ -265,22 +319,8 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         yield from settle(arm, g, 0.5, "line up over it")
         yield from move(arm, arm.pos, 0.8, grip=0.0, label="grip its broad faces")
         flags.add("gripped")
-        if HOLD_STYLE == "block":
-            yield from wait_for(arm, "pressing", "wait for the far end to be held down")
-        # 1. push it toward the arms, the command leading (the arm is soft), until the fixed hook has given enough
-        # for the sprung foot's tooth to come out past its lip's edge
-        base_pos = arm.pos.copy()
-        phase["right"] = "push toward the arms"
+        flags.add("tipping")
         lead = 0.0
-        for _ in range(round(6.0 / DT)):
-            if on_rail()["across"] <= -PUSHED:
-                break
-            lead = min(lead + PUSH_RATE * DT, PUSH_MAX)
-            arm.pos = base_pos - np.array([lead, 0.0, 0.0])
-            yield
-        report["pushed_step"], report["push_lead_mm"] = world["step"], round(lead / MM, 1)
-        report["pushed_mm"] = round(on_rail()["across"] / MM, 2)
-        flags.add("released")
         # 2. tip the near end up a little, along an arc about the hook (still pushing: the lead stays)
         phase["right"] = "tip the near end up"
         for _ in range(round(4.0 / DT)):
@@ -294,6 +334,8 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
             arm.pos = pivot + np.array([c * rel[0] + sn * rel[2], rel[1], -sn * rel[0] + c * rel[2]])
             yield
         report["tipped_step"], report["tip_deg"] = world["step"], round(on_rail()["tilt_deg"], 1)
+        flags.add("tipped")
+        yield from wait_for(arm, "left_clear", "wait for the screwdriver to be clear")
         # 3. slide it toward the far side until the hook is out from under its lip, the command leading
         phase["right"] = "slide toward the far side"
         start = arm.pos.copy()
@@ -351,12 +393,17 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         _, rr = task.rail_pose(st)
         rpy = [round(math.degrees(v), 2) for v in (math.atan2(rr[2, 1], rr[2, 2]), -math.asin(max(-1.0, min(1.0, rr[2, 0]))),
                                                    math.atan2(rr[1, 0], rr[0, 0]))]
-        row = {"step": step, "rail_rpy_deg": rpy, "left": phase["left"], "right": phase["right"], "score": res.info.get("score"),
+        sd_tip, sd_rot = driver()
+        row = {"sd_tip": [round(float(v), 4) for v in sd_tip], "sd_tilt_deg": round(math.degrees(math.acos(min(1.0, abs(sd_rot[2, 2])))), 2),
+               "slot": [round(float(v), 4) for v in slot_point(0.0)],
+               "l_cmd": [round(float(v), 4) for v in arms["left"].pos], "l_meas": [round(float(v), 4) for v in measured_tcp("left")[0]],
+               "l_ik_mm": round(float(arms["left"].ik_err[0]) * 1000, 2) if hasattr(arms["left"], "ik_err") else None}
+        row.update({"step": step, "rail_rpy_deg": rpy, "left": phase["left"], "right": phase["right"], "score": res.info.get("score"),
                "success": res.info.get("success"), "stage": task.stage(st), "undisturbed": task.undisturbed(st),
                "rail_shift_mm": round(shift / MM, 3), "rail_turn_deg": round(turn, 3),
                "blue_low_z": round(float(st[task.TARGET].low[2]), 4),
                "blue_contact_n": round(float(st[task.TARGET].robot_contact_n), 3),
-               "blue_on_floor": task.on_tray_floor(st[task.TARGET]), "blue_released": task.released(st[task.TARGET])}
+               "blue_on_floor": task.on_tray_floor(st[task.TARGET]), "blue_released": task.released(st[task.TARGET])})
         for n in task.BLOCKS:
             b = on_rail(n)
             row[n] = {"along_mm": round(b["along"] / MM, 2), "across_mm": round(b["across"] / MM, 2),

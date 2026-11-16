@@ -1,0 +1,36 @@
+{
+  "variant": "full",
+  "task_score": 1.0,
+  "terminated": true,
+  "termination_reason": "success",
+  "steps": 993,
+  "run_limit_steps": 2400,
+  "final_stage": "in_tray",
+  "undisturbed": true,
+  "rail_shift_mm": 1.1954409562832323e-05,
+  "rail_turn_deg": 0.0,
+  "max_rail_shift_mm": 0.0,
+  "report": {
+    "screwdriver": {
+      "picked": true,
+      "centre_err_mm": 0.468,
+      "in_slot_mm": [
+        0.0,
+        -0.19,
+        1.35
+      ],
+      "lever_lead_mm": 15.0,
+      "foot_spread_mm": 1.09,
+      "open_step": 475
+    },
+    "tipped_step": 683,
+    "tip_deg": 1.2,
+    "unhooked_step": 796,
+    "slide_lead_mm": 31.0,
+    "unhooked_mm": 3.8,
+    "off_step": 826,
+    "success_step": 933,
+    "script_done_step": 962
+  },
+  "wall_s": 117.76714181900024
+}

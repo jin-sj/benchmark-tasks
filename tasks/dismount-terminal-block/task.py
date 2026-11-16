@@ -1,19 +1,19 @@
-"""On the station table, in front of the arms: a loose steel TS35 x 7.5 top-hat DIN rail, 50 cm long, lying flat
-(open side up) and running left to right, with an end bracket 4 cm in from each end. The rail is loose and light
-(200 g): pulled or pushed on without being held, it lifts, slides and turns.
+"""On the station table, in front of the arms: a steel TS35 x 7.5 top-hat DIN rail, 50 cm long, screwed down flat
+(open side up) and running left to right, with an end bracket 4 cm in from each end. On it, latched, three terminal
+blocks about 28 mm apart: beige, blue, beige from the left. To the left, nearer the arms: a small screwdriver holder
+with a flat-blade screwdriver (3.5 x 0.7 mm blade) standing in it, handle up. In front of the right arm, nearer the
+arms than the rail: an open, shallow black parts tray, empty.
 
-On the rail, latched, three terminal blocks about 28 mm apart: beige, blue, beige from the left. In front of the
-right arm, nearer the arms than the rail: an open, shallow black parts tray (low walls, no slots), empty.
+A terminal block (this task's own generic design, every latch dimension given in the README) is 5.1 mm thick (along
+the rail), 65 mm long (across it) and 29 mm tall above the rail. Its base hooks under the rail's lips: at the far end
+(away from the arms) a rigid fixed hook; at the near end (toward the arms) a sprung foot. It can't be pulled or pushed
+off. As with real DIN-rail terminal blocks, it is released with a flat screwdriver: put the blade into the release
+slot at the block's near end and lever the sprung foot outward (2-3.5 mm, about 2-3.5 N), tip the near end up a few
+degrees, slide the block a few millimetres toward the far side so the fixed hook comes out from under its lip, and
+lift it off.
 
-A terminal block is a push-in feed-through terminal block: 5.1 mm thick (along the rail), 65 mm long
-(across it), 36 mm tall (29 mm above the rail). Its base hooks under the rail's lips: at the far end (away from the
-arms) a fixed hook, which gives about 2.5 mm when pushed firmly; at the near end (toward the arms) a sprung foot. It
-cannot be pulled straight off. To take it off, push it about 2.5 mm toward the arms (about 3 N; the fixed hook gives)
-so the sprung foot comes out from under its lip; tip the near end up a few degrees; slide the block about 5 mm toward
-the far side so the hook comes out from under its lip; lift it off.
-
-Task: take the blue block off the rail and put it in the tray, letting go of it there. Hold the rail down with one arm
-while the other pulls the block off; leave the two beige blocks latched where they are.
+Task: take the blue block off the rail with the screwdriver and put it in the tray, letting go of it there; leave the
+two beige blocks latched where they are.
 """
 
 from __future__ import annotations
@@ -38,8 +38,11 @@ tp.LEFT_BRACKET_Y = (0.200, 0.208)
 tp.RIGHT_BRACKET_Y = (-0.208, -0.200)
 tp.BLOCK_MODEL = "HOOK"  # push-in block: fixed hook at +x (far side), sprung foot at -x (near side)
 tp.FIXED_HOOK = True
-tp.HOOK_FLEX = 2.5 * 1e-3  # the fixed hook gives up to 2.5 mm under a firm push (the plastic bends) ...
-tp.HOOK_SPRING = 1000.0  # ... at 1 N/mm (a simplification: about what the simulated arm can push sideways)
+tp.HOOK_FLEX = 0.0  # the fixed hook is rigid: the block is released only through the sprung foot ...
+tp.RELEASE_SLOT = True  # ... with a screwdriver in the release slot at its near end
+tp.TAB_THICK = 3.0 * 1e-3  # the foot's tab beyond the slot (1.6 mm: the blade tunnelled through it, run 7)
+tp.SLOT_WIDTH = 2.4 * 1e-3  # the release slot: 2.4 mm wide (across the rail) by the block's 5.1 mm, 9 mm deep, for a
+# 3.5 x 0.7 mm blade (1.6 mm left the soft arm's blade on the tab's edge, run 5)
 tp.BLOCK_HEIGHT = (36.15 - 7.05) * 1e-3  # the block's top above the lip tops
 tp.TOUCH_WATCH.add("blue")  # the blue block's contact with the robot is measured (released: no contact)
 tp.install()
@@ -61,7 +64,12 @@ BLOCKS = tuple(START)
 TARGET = "blue"
 SEATED_Z = RAIL_ORIGIN[2] + tp.RAIL_HEIGHT + tp.SEATED_HEIGHT
 
-OBJECTS = [tp.part("rail", "rail", RAIL_ORIGIN), tp.part("tray", "tray", TRAY_ORIGIN)]
+HOLDER_ORIGIN = (0.20, 0.08, TOP)  # the screwdriver holder's base centre: left of the rail's middle, nearer the arms
+SCREWDRIVER_START = (HOLDER_ORIGIN[0], HOLDER_ORIGIN[1],  # its blade's tip; it stands in the holder on its handle
+                     TOP + tp.HOLDER[2] - tp.SHAFT[1] + 0.5 * MM)
+OBJECTS = [tp.part("rail", "rail", RAIL_ORIGIN, fixed=True), tp.part("tray", "tray", TRAY_ORIGIN),
+           tp.part("holder", "holder", HOLDER_ORIGIN, fixed=True),
+           tp.part("screwdriver", "screwdriver", SCREWDRIVER_START)]
 OBJECTS += [tp.part(n, KINDS[n], (RAIL_ORIGIN[0], RAIL_ORIGIN[1] + y, SEATED_Z), latched=True) for n, y in START.items()]
 
 # -- scoring thresholds ----------------------------------------------------------------------------------------
