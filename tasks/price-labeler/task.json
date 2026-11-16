@@ -1,0 +1,20 @@
+{
+  "title": "Price a case of cans with a hand price labeler: one label flat inside each lid's seam ring",
+  "category": "Impact on jobs",
+  "keywords": [
+    "retail stocking",
+    "hand tool trigger",
+    "price labeling",
+    "precise placement",
+    "repetition"
+  ],
+  "instruction": "Price the cans: stick one price label flat on each can's lid, inside the lid's seam ring.",
+  "context": "Stockers and order fillers (O*NET 53-7065.00; about 2.8 million US jobs, BLS) price merchandise as they stock it. With a hand labeler each item takes a full trigger squeeze to feed one label, then the nose roller pressed on where the label belongs.",
+  "setup": "An open cardboard tray (148 x 218 mm, 3 mm floor, 40 mm walls) 0.30 m in front of the arm bases, 0.12 m right of their midline, holding six loose steel soup cans upright in two rows of three, 70 mm apart: each 66 mm across, 100 mm tall, 0.42 kg, lid with a seam ring round a 54 mm centre panel. A hand price labeler (blue plastic, 0.2 kg): 90 mm handle with rubber grip, a sprung trigger 10 mm in front of it (7.5 N to start, 22.5 N fully in; squeezed 8 mm and released it feeds one label), a head reaching down to a 12 mm rubber nose roller 65 mm along and 78 mm below the grip; roll of 20 labels (25 x 15 mm, white, orange band). It stands nose down in a dark grey stand (70 x 110 mm, walls 62 mm round a 34 x 42 mm slot) 0.22 m in front of the bases, 0.30 m right of the midline, handle level, trigger facing away from the robot.",
+  "scoring": "At the end: a can is priced if it stands upright in the tray (within 10 degrees) with exactly one label on its lid, all four corners inside the 54 mm seam ring. 1.0: all six priced and no label anywhere else (none stuck on the tray, table or stand, none spoiled by a second squeeze before pressing). 0.5: at least three priced. 0.25: at least one. 0 otherwise.",
+  "run_limit": "1,200 steps (60 s at 20 Hz)",
+  "reset_notes": "Peel the labels off the lids (or use unlabelled cans), stand the six cans back in the tray, put the labeler nose down in its stand. Labels are consumed: count them from the roll.",
+  "fidelity": "PhysX at 240 Hz. Label adhesion is modelled by placing a pressed label where the roller pressed it and keeping it on its can; peeling from the backing and printing are not simulated. The feed mechanism is reduced to the trigger. Cans collide as eight-pointed sections inside their rounds.",
+  "scores": "Dream-1 run: 0.0 (1,200 steps; its right arm moved over the tray and stand but never took hold of the labeler); scripted demo: 1.0 (success at step 720: six cans priced, one label each inside the seam ring, none wasted). README checks: three cans 0.5; double label 0.5; spoiled label 0.5.",
+  "media": "M-VJZWJN"
+}
