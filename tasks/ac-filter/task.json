@@ -1,16 +1,17 @@
 {
   "title": "Replace the mesh filter in a wall-mounted air conditioner",
-  "category": "Societal relevance",
+  "category": "Impact on jobs",
   "keywords": [
     "bimanual",
-    "household maintenance",
-    "air conditioner",
+    "preventive maintenance",
+    "HVAC",
+    "split air conditioner",
     "hinged cover",
     "unhook and re-hook",
     "thin part"
   ],
   "instruction": "Replace the dusty filter with the clean one: open the cover, take the dusty filter out, fit the clean filter in its place, and close the cover.",
-  "context": "Split air conditioners' manuals ask owners to clean or replace the mesh filter every few weeks; it is unhooked from behind a hinged cover and re-hooked the same way.",
+  "context": "Cleaning or swapping the mesh intake filter behind a wall-mounted split or fan-coil unit's hinged cover every 2-4 weeks is core scheduled preventive maintenance for General Maintenance and Repair Workers (O*NET 49-9071.00, 1.5M US workers: 'Perform routine preventive maintenance to ensure that machines continue to run smoothly, building systems operate efficiently...'), HVAC Mechanics and Installers (49-9021.00, 415k US workers: 'cleaning or replacing filters'), and commercial/hotel Housekeeping and Janitorial staff (37-2011/37-2012, 3.1M US workers), with well over 500k US workers performing this specific filter service regularly across hotels, offices, apartments, hospitals and commercial buildings. Beyond opening a cover, it tests synchronized bimanual unhooking and blind top-lip-then-bottom-lug seating of a wide (600 mm), thin, curved frame confined between the cover and coil.",
   "setup": "A wall board (20 mm thick, 900 x 450 mm) across the table 0.74 m from the arm bases; on it a white plastic split-AC indoor unit, 700 mm wide, 270 mm tall, 190 mm deep, underside 80 mm above the table, front 0.55 m from the bases, centred. Front cover: a 700 x 173 x 12 mm panel, 0.3 kg, hinged along its top edge (344 mm up), a 10 mm finger pull along its bottom edge; its stiff hinge holds it at any angle, fully open at 80 degrees. Behind it the filter stands on a ledge 150 mm up, behind three 6 mm lugs, its top behind a lip from 300 mm up. Filters: 600 mm wide, 168 mm tall, grey plastic frame (5 mm deep) and mesh, lower part flat, top 55 mm bent back 15 degrees, two pull tabs (20 x 20 x 3 mm) on the bottom edge 150 mm either side of the middle. The dusty one (90 g, brown-grey) is fitted; the clean one (80 g, light grey) lies face up on the table, tabs up toward the robot, its bottom edge 0.36 m from the bases, centred.",
   "scoring": "At the end: 0 if any part of the dusty filter is in the unit (behind its front, between its underside and top). Otherwise 1.0 if the clean filter is fitted (on the ledge within 2 mm, behind the lugs, top behind the lip, upright and facing out within 3 degrees, centred within 10 mm) and the cover shut (within 3 degrees: bottom edge within 9 mm of the unit), held 1 s; 0.5 fitted with the cover open; 0.25 otherwise.",
   "run_limit": "3,000 steps (150 s at 20 Hz)",

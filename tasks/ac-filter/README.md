@@ -1,18 +1,32 @@
 # Replace the mesh filter in a wall-mounted air conditioner
 
-Split air conditioners' indoor units, the white boxes high on the walls of homes, offices and hotel rooms, take in
-air through a mesh filter behind their front cover. Their manuals ask for the filter to be cleaned or replaced every
-few weeks; a clogged filter cuts the airflow and the cooling. Doing it is the same everywhere: lift the front cover
-until it stays open, unhook the filter (push it up off its lugs, swing its bottom out, slide its top down out from
-behind the lip), fit the new one the other way round (its top up behind the lip first, then its bottom in behind the
-lugs), and close the cover.
+Wall-mounted ductless split air conditioners and fan-coil indoor units in hotels, offices, apartments, hospitals,
+server rooms and commercial buildings take in return air through a washable mesh filter behind their hinged front
+cover. Service manuals and preventive-maintenance schedules require pulling and cleaning or swapping this mesh filter
+every 2 to 4 weeks; a clogged screen restricts airflow, frosts the evaporator coil and wastes energy. Doing it is the
+same across units: lift the front cover until its friction/detent hinge holds it open, unhook the filter (lift it up
+off its bottom retaining lugs, swing its bottom edge out, slide its curved top down out from behind the upper lip),
+fit the clean replacement filter in reverse order (feed its curved top up behind the upper lip first, swing the lower
+frame in flush against the seat, set its bottom edge down behind the three lugs), and close the cover.
+
+**Impact on jobs:** Scheduled filter replacement and cleaning on wall-mounted split and room HVAC units is a core,
+regular preventive-maintenance task for **General Maintenance and Repair Workers** (O*NET `49-9071.00`, ~1,500,000 US
+workers, BLS OEWS: *"Perform routine preventive maintenance to ensure that machines continue to run smoothly, building
+systems operate efficiently, or the physical condition of buildings does not deteriorate"*), **Heating, Air
+Conditioning, and Refrigeration Mechanics and Installers** (O*NET `49-9021.00`, ~415,000 US workers: *"Perform
+scheduled preventive maintenance, such as cleaning or replacing filters, cleaning coils, or lubricating motors"*), and
+commercial/hospitality **Maids and Housekeeping Cleaners** (`37-2012.00`, ~900,000 US workers) and **Janitors and
+Cleaners** (`37-2011.00`, ~2,200,000 US workers) who swap room-unit intake screens during regular room and building
+maintenance rounds. Across building maintenance and HVAC service crews alone, well over 500,000 US workers perform
+this specific filter swap regularly using this exact hand procedure.
 
 The robot does it with both arms: open the cover, take the dusty filter out, fit the clean one, close the cover.
 
-The physical skill: working a hinged cover open and shut along its arc; unhooking and re-hooking a wide, light, thin
-part that is held at both ends (lugs below, a lip above) and can only be taken out or put in by a lift-tilt-slide
-sequence, both arms moving it together without twisting it; and turning a part over from lying flat to upright
-between two grippers.
+The physical skill: working a hinged cover open and shut along its arc; synchronized bimanual unhooking and blind
+top-lip-then-bottom-lug re-hooking of a wide (600 mm), light, thin curved frame captured at both ends (three 6 mm lugs
+below, an 11 mm lip above, with the coil 5 mm behind and the open cover above constraining the approach) that can only
+be removed or seated by a coordinated lift-tilt-slide sequence without racking or twisting it; and flipping the wide
+frame from lying flat on the bench to upright between two grippers.
 
 ## Files
 
