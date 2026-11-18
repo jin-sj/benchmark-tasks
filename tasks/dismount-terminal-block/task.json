@@ -18,6 +18,6 @@
   "run_limit": "2,400 steps (2 min at 20 Hz)",
   "reset_notes": "Put the blue block back between the beige blocks: hook its far end under the far lip, then press its near end down until the sprung foot clicks. Stand the screwdriver back in its holder, handle up. Nothing is consumed.",
   "fidelity": "PhysX 240 Hz (-E device=cpu). Generic push-in terminal block of this task's own design, specified as a buildable equivalent: rigid fixed hook; sprung foot as a 1 N/mm slider (release 2.0 N at the lip's edge) opened through a 2.4 mm release slot. Collision simplified to boxes and convex pieces. Blade 1.0 mm thick (0.7 mm tunnelled in PhysX). Rail lips 2 mm (1 mm real). Release read from the robot's contact force on the block.",
-  "scores": "Dream-1 run: 0.0 (2,400 steps; the arms moved toward the screwdriver and over the rail, the blue block stayed latched); scripted demo: 1.0 (success at step 933); block held in the tray: 0.75; lifted off the rail and held above it: 0.5; foot levered out with the screwdriver and held: 0.25; same motions without the screwdriver: 0.0 (the foot stays latched)",
+  "scores": "Dream-1 run: 0.0 (the blue block stayed latched); scripted demo: 1.0 (success at step 933); held in the tray: 0.75; lifted off the rail and held: 0.5; foot levered out and held: 0.25; same motions without the screwdriver: 0.0",
   "media": "M-NZBMRG"
 }
