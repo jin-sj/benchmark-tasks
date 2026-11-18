@@ -1,0 +1,353 @@
+{
+  "variant": "full",
+  "task_score": 1.0,
+  "terminated": true,
+  "termination_reason": "success",
+  "steps": 650,
+  "run_limit_steps": 1600,
+  "wrong": null,
+  "inserted_ever": {
+    "probe_red": [
+      1,
+      356
+    ],
+    "probe_black": [
+      37,
+      523
+    ]
+  },
+  "selector_vdc_step": 180,
+  "test_reading_step": 540,
+  "best_streak": 13,
+  "readings_shown": [
+    [
+      170,
+      "V~",
+      "0.00",
+      false
+    ],
+    [
+      180,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      190,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      200,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      210,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      220,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      230,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      240,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      250,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      260,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      270,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      280,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      290,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      300,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      310,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      320,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      330,
+      "V DC",
+      "0.00",
+      false
+    ],
+    [
+      340,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      350,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      360,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      370,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      380,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      390,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      400,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      410,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      420,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      430,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      440,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      450,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      460,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      470,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      480,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      490,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      500,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      510,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      520,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      530,
+      "V DC",
+      "0.00",
+      true
+    ],
+    [
+      540,
+      "V DC",
+      "12.00",
+      true
+    ],
+    [
+      550,
+      "V DC",
+      "12.00",
+      true
+    ],
+    [
+      560,
+      "V DC",
+      "12.00",
+      true
+    ],
+    [
+      570,
+      "V DC",
+      "12.00",
+      true
+    ],
+    [
+      580,
+      "V DC",
+      "12.00",
+      true
+    ],
+    [
+      590,
+      "V DC",
+      "12.00",
+      true
+    ],
+    [
+      600,
+      "V DC",
+      "12.00",
+      true
+    ],
+    [
+      610,
+      "V DC",
+      "12.00",
+      true
+    ],
+    [
+      620,
+      "V DC",
+      "12.00",
+      true
+    ],
+    [
+      630,
+      "V DC",
+      "12.00",
+      true
+    ],
+    [
+      640,
+      "V DC",
+      "12.00",
+      true
+    ],
+    [
+      650,
+      "V DC",
+      "12.00",
+      true
+    ],
+    [
+      660,
+      "V DC",
+      "12.00",
+      true
+    ]
+  ],
+  "lift_mm": {
+    "probe_red": 81.4,
+    "probe_black": 81.5
+  },
+  "report": {
+    "lifted_step": {
+      "left": 202,
+      "right": 360
+    },
+    "dial_done_step": 219,
+    "tries": {
+      "left_2": 1,
+      "right_38": 1
+    },
+    "inserted": [
+      {
+        "side": "left",
+        "terminal": 2,
+        "step": 367
+      },
+      {
+        "side": "right",
+        "terminal": 38,
+        "step": 533
+      }
+    ],
+    "success_step": 550
+  },
+  "wall_s": 178.29265356063843
+}

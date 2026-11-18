@@ -11,10 +11,13 @@ the scorer reads.
 - Holders (fixed parts, ``HOLDER``): a block with a hole the shroud fits into; a probe stands in it tip down, resting
   on its finger guard.
 
-The record (``RECORD``), updated once per control step from the probes' poses and the robot's joint readings: each
-probe's tip position, which opening (if any) it is in and how deep, whether a gripper is closed on its handle, the
-largest lift out of its holder so far, whether a tip has entered a wrong opening so far, and how long both tips have
-been seated and held without a break.
+The record (``RECORD``), updated once per control step from the probes' poses, the meter's selector and the robot's
+joint readings: each probe's tip position, which opening (if any) it is in and how deep, whether its tip touches that
+terminal's clamp (electrical contact), whether a gripper is closed on its handle, the largest lift out of its holder
+so far, whether a tip has entered a wrong opening so far; and the meter: twice a second it takes a reading (the
+potential of the clamp under the red probe's tip minus that under the black one's, when both touch a wired clamp;
+the selector decides what the display shows) and shows it on its display (``meter_parts.show``). The score is read
+from the display's readings.
 """
 
 from __future__ import annotations
@@ -148,8 +151,9 @@ def install() -> None:
 
 
 # -- the record -------------------------------------------------------------------------------------------------------
-ON_CLAMP = 0.7 * MM  # a tip in its opening's bore within this of the opening's floor, the clamp, touches the clamp
-SEATED_DEPTH = OPENING_DEPTH - ON_CLAMP  # (that is, this far below the mouth): it makes contact
+ON_CLAMP = 0.3 * MM  # a tip in its opening's bore within this of the opening's floor (the clamp) touches the clamp
+CONTACT_DEPTH = OPENING_DEPTH - ON_CLAMP  # (that is, this far below the mouth): electrical contact
+INSERTED_DEPTH = 4.0 * MM  # a tip this far below the L or N opening's mouth, inside its bore, is half way in
 ENTERED_DEPTH = 1.0 * MM  # a tip this far below a wrong opening's mouth, inside its bore, has entered it
 IN_BORE = OPENING / 2 + 0.3 * MM  # a tip's centre within this of an opening's axis (each way) is inside its bore
 LIFTED = 30 * MM  # a probe whose tip rose this far above where it started has been lifted out of its holder
@@ -157,15 +161,25 @@ HELD_AXIS = 4 * MM  # held: a closed gripper's TCP within this of the probe's ax
 HELD_GAP = HANDLE[0] + 1.5 * MM  # ... its pads closed to at most this ...
 HELD_SPAN = (Z_HANDLE - 5 * MM, Z_CAP + 5 * MM)  # ... and the TCP along the handle
 
+# the circuit (real trial: an isolated 12 V DC source wired into the L (+) and N (-) clamps, nothing else wired);
+# the red probe's lead goes to the meter's V jack, the black one's to COM
+SOURCE_V = 12.0
+POTENTIAL = {L_INDEX: SOURCE_V, N_INDEX: 0.0}
+LEAD_JACK = {PROBE_RED: "V", PROBE_BLACK: "COM"}
+READ_EVERY_S = 0.5  # the meter shows a new reading twice a second
+TEST_BAND = (11.4, 12.6)  # V: a reading of the test voltage (12 V +-5 %), either sign (probes either way round)
+STEADY_READINGS = 3  # readings in a row: the voltage shown for 1 s (from the first to the third reading)
+
 CONFIG = {"strip_origin": None, "probes": (PROBE_RED, PROBE_BLACK), "targets": (L_INDEX, N_INDEX),
-          "robots": ("left_robot", "right_robot"), "bases": None}
+          "robots": ("left_robot", "right_robot"), "bases": None, "meter": "meter"}
 RECORD: dict = {}
 
 
 def _new_record(states) -> dict:
     tips = {n: _tip(states[n]) for n in CONFIG["probes"]}
-    return {"start_tip": tips, "lift": {n: 0.0 for n in tips}, "wrong": None, "both_s": 0.0, "now": {},
-            "seated_ever": {n: None for n in tips}}
+    return {"start_tip": tips, "lift": {n: 0.0 for n in tips}, "wrong": None, "now": {},
+            "inserted_ever": {n: None for n in tips}, "readings": [], "streak": 0, "best_streak": 0,
+            "test_reading_step": None, "next_read_s": 0.0, "display": "", "selector_vdc_step": None}
 
 
 def _pose(state):
@@ -224,14 +238,51 @@ def held(state, tcps) -> bool:
     return False
 
 
+def volts(now: dict) -> float:
+    """What the meter measures between its V and COM jacks: the potential of the clamp the red probe's tip touches
+    minus that of the black one's, when both touch a wired clamp (L or N); 0 otherwise (an open circuit)."""
+    pot = {}
+    for n in CONFIG["probes"]:
+        i = now[n]["opening"]
+        if not now[n]["contact"] or i not in POTENTIAL:
+            return 0.0
+        pot[LEAD_JACK[n]] = POTENTIAL[i]
+    return pot["V"] - pot["COM"]
+
+
+def display_text(selector: str | None, v: float) -> str:
+    """The meter's display for a measured ``v`` (V) with the selector at ``selector``: blank off or between
+    positions; on V DC the volts with two decimals (autoranging, 6000 counts: '12.00', '-12.00', '0.00'); on V~
+    '0.00' (no AC voltage); on mV 'OL' (over range) once the voltage exceeds 600 mV, else '0.0'; on Ohm 'OL'."""
+    if selector in (None, "OFF"):
+        return ""
+    if selector == "V DC":
+        return f"{v:.2f}" if abs(v) >= 0.005 else "0.00"
+    if selector == "V~":
+        return "0.00"
+    if selector == "mV":
+        return "OL" if abs(v) > 0.6 else "0.0"
+    return "OL"
+
+
+def test_reading(text: str) -> bool:
+    """The display shows the test voltage: a V DC reading within 11.4 to 12.6 V, either sign."""
+    try:
+        return TEST_BAND[0] <= abs(float(text)) <= TEST_BAND[1]
+    except ValueError:
+        return False
+
+
 def _record(base, states) -> None:
+    import meter_parts as mp
+
     step = int(base.episode_length_buf[0])
     if not RECORD or step <= 1 or step < RECORD.get("step", 0):
         RECORD.clear()
         RECORD.update(_new_record(states))
+        mp.show("")
     RECORD["step"] = step
     tcps = _tcps(base)
-    targets = dict(zip(CONFIG["probes"], CONFIG["targets"], strict=True))
     now = {}
     for n in CONFIG["probes"]:
         tip = _tip(states[n])
@@ -240,12 +291,28 @@ def _record(base, states) -> None:
         RECORD["lift"][n] = max(RECORD["lift"][n], float(tip[2] - RECORD["start_tip"][n][2]))
         if i is not None and i not in CONFIG["targets"] and depth >= ENTERED_DEPTH and RECORD["wrong"] is None:
             RECORD["wrong"] = (n, i, step)
-        seated = i is not None and i in CONFIG["targets"] and depth >= SEATED_DEPTH
-        if seated and h and RECORD["seated_ever"][n] is None:
-            RECORD["seated_ever"][n] = (i, step)
+        target = i is not None and i in CONFIG["targets"]
+        if target and depth >= INSERTED_DEPTH and h and RECORD["inserted_ever"][n] is None:
+            RECORD["inserted_ever"][n] = (i, step)
         now[n] = {"tip": [round(float(v), 4) for v in tip], "opening": i, "depth_mm": round(depth / MM, 2),
-                  "held": h, "seated": seated}
-    ok = all(now[n]["seated"] and now[n]["held"] for n in CONFIG["probes"]) and \
-        {now[n]["opening"] for n in CONFIG["probes"]} == set(CONFIG["targets"])
-    RECORD["both_s"] = RECORD["both_s"] + float(base.step_dt) if ok else 0.0
+                  "held": h, "contact": i is not None and depth >= CONTACT_DEPTH}
     RECORD["now"] = now
+    # the meter: a new reading twice a second, shown on its display until the next one
+    meter = states.get(CONFIG["meter"])
+    selector = getattr(meter, "selector", None)
+    if selector == "V DC" and RECORD["selector_vdc_step"] is None:
+        RECORD["selector_vdc_step"] = step
+    t = step * float(base.step_dt)
+    if t + 1e-9 >= RECORD["next_read_s"]:
+        RECORD["next_read_s"] = (math.floor(t / READ_EVERY_S + 1e-6) + 1) * READ_EVERY_S
+        v = volts(now)
+        text = display_text(selector, v)
+        both_held = all(now[n]["held"] for n in CONFIG["probes"])
+        good = selector == "V DC" and test_reading(text) and both_held
+        RECORD["streak"] = RECORD["streak"] + 1 if good else 0
+        RECORD["best_streak"] = max(RECORD["best_streak"], RECORD["streak"])
+        if good and RECORD["test_reading_step"] is None:
+            RECORD["test_reading_step"] = step
+        RECORD["readings"].append((step, selector, text, both_held))
+        RECORD["display"] = text
+        mp.show(text)

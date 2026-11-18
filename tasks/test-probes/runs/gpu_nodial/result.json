@@ -1,0 +1,51 @@
+{
+  "variant": "nodial",
+  "task_score": 0.25,
+  "terminated": false,
+  "termination_reason": null,
+  "steps": 657,
+  "run_limit_steps": 1600,
+  "wrong": null,
+  "inserted_ever": {
+    "probe_red": [
+      1,
+      348
+    ],
+    "probe_black": [
+      37,
+      587
+    ]
+  },
+  "selector_vdc_step": null,
+  "test_reading_step": null,
+  "best_streak": 0,
+  "readings_shown": [],
+  "lift_mm": {
+    "probe_red": 81.5,
+    "probe_black": 81.6
+  },
+  "report": {
+    "lifted_step": {
+      "right": 200,
+      "left": 202
+    },
+    "tries": {
+      "left_2": 1,
+      "right_38": 3
+    },
+    "inserted": [
+      {
+        "side": "left",
+        "terminal": 2,
+        "step": 358
+      },
+      {
+        "side": "right",
+        "terminal": 38,
+        "step": 597
+      }
+    ],
+    "script_done_step": 597
+  },
+  "wall_s": 172.641508102417
+}

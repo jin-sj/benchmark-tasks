@@ -1,0 +1,23 @@
+{
+  "variant": "hold",
+  "task_score": 0.0,
+  "terminated": false,
+  "termination_reason": null,
+  "steps": 1600,
+  "run_limit_steps": 1600,
+  "wrong": null,
+  "inserted_ever": {
+    "probe_red": null,
+    "probe_black": null
+  },
+  "selector_vdc_step": null,
+  "test_reading_step": null,
+  "best_streak": 0,
+  "readings_shown": [],
+  "lift_mm": {
+    "probe_red": 0.0,
+    "probe_black": 0.0
+  },
+  "report": {},
+  "wall_s": 348.91416573524475
+}

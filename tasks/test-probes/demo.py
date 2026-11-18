@@ -1,16 +1,22 @@
 """Scripted two-arm demo for the test-probes task. It uses only the task's known starting layout and the robot's own
 joint readings (the measured gripper position), never the simulator's object poses.
 
-    python demo.py                    # each arm takes a probe and holds its tip in the L or N test opening: 1.0
-    python demo.py --variant hold     # no arm moves (0.0)
-    python demo.py --variant wrong    # the right arm's probe goes into a terminal two blocks from N first, then N: 0
+    python demo.py                    # the right arm turns the meter to V DC, then each arm holds a probe's tip on
+                                      # the L or N clamp; the meter shows 12.00 for 1 s: 1.0
+    python demo.py --variant brief    # as full, but the black probe comes out again ~0.8 s after both are in: 0.5
+    python demo.py --variant nodial   # the meter is left OFF; both tips go in (display blank): 0.25
+    python demo.py --variant wrong    # the black probe goes into a terminal two blocks from N first, then N: 0
+    python demo.py --variant hold     # no arm moves: 0
     python demo.py --device cpu       # CPU physics, ~3x faster, for quick checks
 
-Each arm, the gripper pointing down with its fingers closing across the rail (so the two grippers' narrow sides face
-each other over the strip): comes down over its probe's handle, closes on it 80 mm above the tip (near its centre of mass), lifts it out of its
-holder, carries it over its terminal's test opening, lines its measured gripper position up over the opening and
-lowers the tip until it is 5 mm into it, feeling for the opening: if the gripper stops descending early (the tip is
-on the block's top), it lifts the tip 4 mm, shifts it 1 or 2 mm and tries again. Then it holds there. The left arm takes the red probe to L, the right arm the black probe to N.
+The right arm first turns the meter's selector from OFF to V DC: it comes down over the knob with its gripper open
+across the knob's grip bar, closes on it, turns its wrist 60 degrees clockwise (two clicks), lets go and rises.
+Then each arm, the gripper pointing down with its fingers closing across the rail: comes down over its probe's
+handle, closes on it 80 mm above the tip (near its centre of mass), lifts it out of its holder, carries it over its
+terminal's test opening, lines its measured gripper position up over the opening and lowers the tip until it is
+5 mm into it, feeling for the opening: if the gripper stops descending early (the tip is on the block's top), it
+lifts the tip 4 mm, shifts it 1 or 2 mm and tries again. Then it goes on down until the tip stops on the clamp and
+holds it there, pressing lightly. The left arm takes the red probe to L, the right arm the black probe to N.
 
 Writes ``result.json``, ``steps.jsonl`` and (unless ``--no-video``) one video per camera to ``--out``.
 """
@@ -31,15 +37,12 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 TASK = HERE / "task.py"
-INSTRUCTION = (
-    "Measure the voltage between the L terminal and the N terminal: hold one probe's tip in each terminal's test "
-    "opening, both at once, for one second. Do not put a probe tip into any other terminal's opening."
-)
-VARIANTS = ("full", "hold", "wrong")
+INSTRUCTION = "Measure the DC voltage between the L terminal and the N terminal with the multimeter: the meter must show it steadily for at least one second while one probe's tip is held in each terminal's test opening. Do not put a probe tip into any other terminal's opening."
+VARIANTS = ("full", "brief", "nodial", "wrong", "hold")
 CAMERAS = ("top_cam", "left_cam", "right_cam")
 CONTROL_HZ = 20.0
 DT = 1.0 / CONTROL_HZ
-MAX_STEPS = 800
+MAX_STEPS = 1600  # the run limit
 MM = 1e-3
 
 PAD_TIP = 0.013  # pad tips beyond the TCP
@@ -53,7 +56,10 @@ LOWER_RATE = 6 * MM  # per second
 MAX_LEAD = 3 * MM  # while lowering, the command leads the measured gripper by at most this (no hard push on the top)
 STALL_STEPS = 6  # the gripper has stopped descending for this many steps: the tip is on the block's top
 SEARCH = [(0, 0)] + [(r * MM * c, r * MM * s_) for r in (1.0, 2.0) for c, s_ in ((1, 0), (0, 1), (-1, 0), (0, -1))]
-AFTER_SUCCESS_S = 3.0
+AFTER_SUCCESS_S = 5.0  # the rendered display takes ~2-3 s to settle on a new reading
+KNOB_OPEN = 0.30  # gripper opening around the selector's 8 mm grip bar (~28 mm between the pads)
+KNOB_TCP_ABOVE_FACE = 16 * MM  # TCP this far above the meter's face: the pads (13 mm) pinch the bar's upper part
+TURN_DEG = 60.0  # OFF to V DC: two clicks, clockwise seen from above
 
 
 def smooth(s: float) -> float:
@@ -95,7 +101,7 @@ def rot_z(a: float) -> np.ndarray:
 def make_embodiment(video: bool, device: str = "cuda:0"):
     from yam_arena.inspect_embodiment import YamArenaEmbodiment
 
-    size = (360, 640) if video else (64, 64)
+    size = (720, 1280) if video else (64, 64)  # 1280 x 720: the meter's digits stay legible
     return YamArenaEmbodiment(task=str(TASK), control_hz=CONTROL_HZ, object_jitter=0.0, cam_height=size[0],
                               cam_width=size[1], device=device)
 
@@ -188,13 +194,37 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
             arm.pos = target + corr
             yield
 
-    def probe_script(side, probe, targets):
+    def dial_script(side):
+        """Turn the meter's selector from OFF to V DC: pinch its grip bar from above, turn it 60 degrees clockwise
+        (seen from above), let go and rise."""
+        arm = arms[side]
+        mp = task.mp
+        knob = np.asarray(task.METER_ORIGIN, dtype=float) + np.array([mp.DIAL[0], mp.DIAL[1], mp.FACE_TOP])
+        at = knob + np.array([0.0, 0.0, KNOB_TCP_ABOVE_FACE])
+        # fingers close along the tool's x: across the bar (the bar points at OFF, 60 degrees left of the display)
+        start = rot_z(math.radians(mp.POSITIONS["OFF"])) @ arm.down
+        end = rot_z(math.radians(mp.POSITIONS["OFF"] - TURN_DEG)) @ arm.down
+        yield from move(arm, at + (0, 0, 0.06), 2.5, grip=KNOB_OPEN, rot=start, label="over the selector")
+        yield from settle_until(arm, at + (0, 0, 0.06), "line up over the selector")
+        corr = arm.pos - (at + (0, 0, 0.06))
+        yield from move(arm, at + corr, 1.2, label="down around the selector's bar")
+        yield from settle_until(arm, at, "line up on the bar")
+        yield from move(arm, arm.pos, 0.6, grip=0.0, label="pinch the bar")
+        yield from move(arm, arm.pos, 2.0, rot=end, label="turn the selector to V DC")
+        yield from move(arm, arm.pos, 0.6, label="turn the selector to V DC")
+        yield from move(arm, arm.pos, 0.5, grip=KNOB_OPEN, label="let go of the bar")
+        yield from move(arm, arm.pos + (0, 0, 0.06), 1.0, label="up from the selector")
+        report["dial_done_step"] = world["step"]
+
+    def probe_script(side, probe, targets, first=None):
         """Take ``probe`` from its holder and hold its tip in each opening of ``targets`` in turn (the last one until
         the end)."""
         arm = arms[side]
         if variant == "hold":
             phase[side] = "idle"
             yield from idle()
+        if first is not None:
+            yield from first(side)
         # fingers closing across the rail, each arm turned the way that keeps its last wrist joint in range
         down = rot_z((-1 if side == "left" else 1) * math.pi / 2) @ arm.down
         tip0 = np.asarray(pp.probe_in_holder(task.HOLDERS[task.PROBES[probe]]), dtype=float)
@@ -253,17 +283,24 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
             report.setdefault("inserted", []).append({"side": side, "terminal": i + 1, "step": world["step"]})
             if k < len(targets) - 1:  # out again, up to the next one
                 yield from move(arm, arm.pos + (0, 0, 0.025), 1.0, label=f"out of terminal {i + 1}")
+        flags.add(f"in_{side}")
+        if variant == "brief" and side == "right":  # both tips in for about 0.8 s, then the black one out again
+            yield from wait_for(arm, "in_left", "wait for the other tip")
+            yield from move(arm, arm.pos, 0.8, label=f"hold it in terminal {targets[-1] + 1}")
+            yield from move(arm, arm.pos + (0, 0, 0.03), 1.0, label=f"out of terminal {targets[-1] + 1}")
+            report["script_done_step"] = world["step"]
         phase[side] = f"hold it in terminal {targets[-1] + 1}"
         yield from idle()
 
 
     wrong = [pp.N_INDEX - 2] if variant == "wrong" else []  # two blocks from N (10.4 mm): a missed tip cannot slide into N
     scripts = {"left": probe_script("left", pp.PROBE_RED, [pp.L_INDEX]),
-               "right": probe_script("right", pp.PROBE_BLACK, wrong + [pp.N_INDEX])}
+               "right": probe_script("right", pp.PROBE_BLACK, wrong + [pp.N_INDEX],
+                                     None if variant == "nodial" else dial_script)}
     frames = {c: [] for c in CAMERAS} if video else None
     if video:
         for c in CAMERAS:
-            frames[c].append(obs.images[c])
+            frames[c].append(_keep(c, obs.images[c]))
     log = []
     result = None
     success_step = None
@@ -272,13 +309,16 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         world["step"] = step
         for side in ("left", "right"):
             next(scripts[side])
+        if variant in ("nodial", "wrong") and {"in_left", "in_right"} <= flags and "script_done_step" not in report:
+            report["script_done_step"] = step
         a = pack(arms["left"].action(), arms["right"].action())
         res = emb.step(Action(data=a))
         world["obs"] = res.observation
         world["states"] = object_states(emb._env, emb.task.names)
         st = world["states"]
         row = {"step": step, "left": phase["left"], "right": phase["right"], "score": res.info.get("score"),
-               "success": res.info.get("success"), "wrong": pp.RECORD.get("wrong"), "both_s": round(pp.RECORD.get("both_s", 0.0), 2),
+               "success": res.info.get("success"), "wrong": pp.RECORD.get("wrong"), "display": pp.RECORD.get("display"),
+               "streak": pp.RECORD.get("streak"),
                "probes": pp.RECORD.get("now")}
         for side in ("left", "right"):
             row[f"{side[0]}_cmd"] = [round(float(v), 4) for v in arms[side].pos]
@@ -287,7 +327,7 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         log.append(row)
         if video:
             for c in CAMERAS:
-                frames[c].append(res.observation.images[c])
+                frames[c].append(_keep(c, res.observation.images[c]))
         done_script = "script_done_step" in report and step - report["script_done_step"] >= round(3.0 / DT)
         if res.terminated and success_step is None:
             success_step, result = step, res
@@ -309,7 +349,11 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         "steps": len(log),
         "run_limit_steps": MAX_STEPS,
         "wrong": pp.RECORD.get("wrong"),
-        "seated_ever": pp.RECORD.get("seated_ever"),
+        "inserted_ever": pp.RECORD.get("inserted_ever"),
+        "selector_vdc_step": pp.RECORD.get("selector_vdc_step"),
+        "test_reading_step": pp.RECORD.get("test_reading_step"),
+        "best_streak": pp.RECORD.get("best_streak"),
+        "readings_shown": [r for r in pp.RECORD.get("readings", []) if r[2]],
         "lift_mm": {k: round(v / MM, 1) for k, v in pp.RECORD.get("lift", {}).items()},
         "report": report,
         "wall_s": time.time() - t0,
@@ -327,17 +371,49 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
     return summary
 
 
+def _keep(cam: str, im):
+    """A frame to keep for the videos: the top camera at full size, the wrist cameras at 640 x 360 (memory)."""
+    import cv2
+
+    im = np.asarray(im)
+    return im if cam == "top_cam" else cv2.resize(im, (640, 360), interpolation=cv2.INTER_AREA)
+
+
+METER_CROP = (380, 600, 545, 735)  # rows, columns of the 1280 x 720 top view holding the meter (fixed camera)
+
+
+def combined_frames(frames: dict):
+    """The combined view, frame by frame: the top camera (640 x 360) with a close-up of the meter cut from the same
+    top-camera frame beside it, and the left and right wrist cameras side by side below."""
+    import cv2
+
+    r0, r1, c0, c1 = METER_CROP
+    for top, left, right in zip(frames["top_cam"], frames["left_cam"], frames["right_cam"], strict=True):
+        t = cv2.resize(top, (640, 360), interpolation=cv2.INTER_AREA)
+        crop = top[r0:r1, c0:c1]
+        z = cv2.resize(crop, (round(crop.shape[1] * 360 / crop.shape[0]), 360), interpolation=cv2.INTER_CUBIC)
+        row = np.hstack([t, z])
+        w = row.shape[1] // 2
+        h = round(w * 9 / 16)
+        bottom = np.hstack([cv2.resize(left, (w, h), interpolation=cv2.INTER_AREA),
+                            cv2.resize(right, (row.shape[1] - w, h), interpolation=cv2.INTER_AREA)])
+        yield np.vstack([row, bottom])
+
+
 def write_videos(frames: dict, out: Path, variant: str) -> None:
     import cv2
 
-    for cam, imgs in frames.items():
-        if not imgs:
+    for cam in (*frames, "combined"):
+        imgs = combined_frames(frames) if cam == "combined" else frames[cam]
+        if cam != "combined" and not imgs:
             continue
-        h, w = imgs[0].shape[:2]
+        first = next(iter(combined_frames({k: v[:1] for k, v in frames.items()}))) if cam == "combined" else imgs[0]
+        h, w = first.shape[:2]
         raw = out / f"_{cam}.avi"
+        h, w = h - h % 2, w - w % 2
         writer = cv2.VideoWriter(str(raw), cv2.VideoWriter_fourcc(*"MJPG"), CONTROL_HZ, (w, h))
         for im in imgs:
-            writer.write(np.ascontiguousarray(im[..., ::-1]))
+            writer.write(np.ascontiguousarray(im[:h, :w, ::-1]))
         writer.release()
         name = out / (f"demo_{cam}.mp4" if variant == "full" else f"demo_{variant}_{cam}.mp4")
         ffmpeg = shutil.which("ffmpeg")
