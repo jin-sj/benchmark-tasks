@@ -1,0 +1,40 @@
+{
+  "variant": "full",
+  "task_score": 1.0,
+  "terminated": true,
+  "termination_reason": "success",
+  "steps": 614,
+  "run_limit_steps": 1800,
+  "plug_in_header_mm": [
+    0.22484421730040174,
+    -0.2213072776794389,
+    1.6350021362303568
+  ],
+  "seat_gap_mm": 0.6350021362303568,
+  "latch_mm": 3.4614732413729143e-05,
+  "cpa_mm": 3.9998958818614483,
+  "latched": true,
+  "report": {
+    "gripped_step": 123,
+    "inserted_step": 307,
+    "press": [
+      {
+        "label": "push the plug on",
+        "low": 0.8573629880500518,
+        "goal": 0.8581000000000002,
+        "step": 414
+      },
+      {
+        "label": "push the CPA home",
+        "low": 0.8569758335433141,
+        "goal": 0.8572000000000002,
+        "step": 527
+      }
+    ],
+    "pushed_step": 430,
+    "cpa_step": 543,
+    "success_step": 554,
+    "script_done_step": 567
+  },
+  "wall_s": 163.33649611473083
+}

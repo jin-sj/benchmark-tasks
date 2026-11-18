@@ -1,0 +1,21 @@
+{
+  "title": "Mate a sealed harness connector on the assembly line so its CPA lock will close: fully past the latch first (about 33 N), then the CPA",
+  "category": "Impact on jobs",
+  "keywords": [
+    "assembly line",
+    "sealed connector",
+    "connector position assurance",
+    "two-stage lock",
+    "axial force",
+    "flexible lead"
+  ],
+  "instruction": "Connect the harness plug to the sensor and close its orange CPA lock.",
+  "context": "On vehicle and electrical-equipment assembly lines, assemblers mate sealed harness connectors onto installed sensors many times a shift. A plug pushed short of its latch makes contact at first and works loose later, so the connector has a CPA (connector position assurance) lock that only closes once the latch is fully seated: the plug must be pushed straight on at about 33 N (at 25 N it stops half-mated), and a half-mated plug cannot be locked. Workers (BLS OEWS, May 2024): assemblers incl. team assemblers (O*NET 51-2092.00) in motor vehicle (152,670) and vehicle parts (138,530) manufacturing; electrical, electronic and electromechanical assemblers (51-2028, task: \"Connect cables, tubes, and wiring, according to specifications\") in manufacturing (228,530).",
+  "setup": "Assembly-line station: the table top is the line pallet of a powertrain sub-assembly, with the harness already routed and clipped. Positions from the arm bases' midpoint (x forward, y left). Sensor module, cast aluminium, 44 x 52 x 62 mm, on a 70 x 90 x 4 mm steel bracket plate centred at x 0.36 m, y -0.12 m; on its top a black PBT 3-way sealed connector header (shroud cavity 14.5 x 22.5 mm, 17 mm deep, rim 83 mm above the table, keyway on the left; lock ramp facing the robot, its catch 9 mm above the cavity floor), with a blue interface seal and three pins inside. Neighbours: a grey plastic relay box 50 x 38 x 105 mm 47 mm to the left of the header's axis; a black 28 mm rubber coolant hose 140 mm long, 48 mm behind the axis, its top 76 mm above the table. Harness plug: black PA66, 18.4 x 24.8 mm collar, 30 mm tall, about 14 g, a sprung latch arm and an orange CPA slider (3 x 10 mm top, standing 4 mm proud in pre-lock) on the side facing the robot, key rib on its left, a blue radial seal on its far side; it stands on its face on the table at x 0.26 m, y -0.20 m, same orientation as the header. Its lead (190 mm of 7 mm black convoluted tube, three wires) leaves a 90 degree dress cover on the plug's far side and runs straight away from the robot, 24 mm above the table, to a white nylon harness clip (18 mm tall) on a 24 x 24 x 15 mm steel block at x 0.463 m, which also holds the 12 mm taped harness trunk running left-right.",
+  "scoring": "At the end. Latched: the plug fully on the header with its latch caught: on the header's axis within 1 mm, its collar within 1.5 mm of the shroud's rim, its latch arm sprung back to within 0.5 mm of rest (hook under the lock ramp). In a real trial: collar down on the rim in a side photo and the plug stays on when pulled by its body by hand. CPA home: pushed down at least 3.0 of its 4.0 mm (flush with the plug's top within 1 mm, photo). 1.0: latched and CPA home. 0.5: latched, CPA not home. 0: not latched (half-mated, even with the CPA pressed on it; off the header; never connected).",
+  "run_limit": "1,800 steps (90 s at 20 Hz)",
+  "reset_notes": "Pull the CPA back to pre-lock with a small screwdriver under its tab, press the latch arm's release and pull the plug off; stand it back on its face at its start mark with the lead straight to the clip.",
+  "fidelity": "PhysX at 240 Hz. Latch arm: a prismatic joint sprung at 15 N/mm. Terminal and seal drag: contact friction (0.35) of a pad on the plug's side, sprung out at 12 N/mm with a 1.05 mm preload (about 14 N on the wall); seal compression: a plate on a 1.5 N/mm spring. Measured: latches at 32.9 N, stays half-mated at 25 N. CPA: a two-rest spring (15 N); its pre-lock release is a joint limit opened once latched. Lead: four rigid links on sprung joints.",
+  "scores": "Dream-1 run: 0.0 (1,800 steps; its right arm reached toward the plug but never took hold of it); scripted demo: 1.0 (success at step 554). README checks (CPU): CPA left out 0.5; half-mated 0; half-mated with the CPA pressed at 25 N 0; no motion 0.",
+  "media": "M-AA98VX"
+}

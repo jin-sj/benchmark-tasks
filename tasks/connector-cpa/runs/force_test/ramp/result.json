@@ -1,0 +1,22 @@
+{
+  "variant": "nocpa",
+  "task_score": 0.5,
+  "terminated": false,
+  "termination_reason": null,
+  "steps": 1600,
+  "run_limit_steps": 1800,
+  "plug_in_header_mm": [
+    0.24937152862547501,
+    -0.24694472551345376,
+    1.0045638084410502
+  ],
+  "seat_gap_mm": 0.004563808441050199,
+  "latch_mm": 0.00027069657448919315,
+  "cpa_mm": 0.0008061479661591875,
+  "latched": true,
+  "report": {
+    "gripped_step": 123,
+    "inserted_step": 300
+  },
+  "wall_s": 137.96363520622253
+}
