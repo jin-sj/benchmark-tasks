@@ -1,7 +1,7 @@
 """On the station table, in front of the arms: a steel TS35 x 7.5 top-hat DIN rail, 50 cm long, screwed down flat
 (open side up) and running left to right, with an end bracket 4 cm in from each end. On it, latched, three terminal
 blocks about 28 mm apart: beige, blue, beige from the left. To the left, nearer the arms: a small screwdriver holder
-with a flat-blade screwdriver (3.5 x 0.7 mm blade) standing in it, handle up. In front of the right arm, nearer the
+with a flat-blade screwdriver (3.5 x 1.0 mm blade) standing in it, handle up. In front of the right arm, nearer the
 arms than the rail: an open, shallow black parts tray, empty.
 
 A terminal block (this task's own generic design, every latch dimension given in the README) is 5.1 mm thick (along
@@ -41,8 +41,8 @@ tp.FIXED_HOOK = True
 tp.HOOK_FLEX = 0.0  # the fixed hook is rigid: the block is released only through the sprung foot ...
 tp.RELEASE_SLOT = True  # ... with a screwdriver in the release slot at its near end
 tp.TAB_THICK = 3.0 * 1e-3  # the foot's tab beyond the slot (1.6 mm: the blade tunnelled through it, run 7)
-tp.SLOT_WIDTH = 2.4 * 1e-3  # the release slot: 2.4 mm wide (across the rail) by the block's 5.1 mm, 9 mm deep, for a
-# 3.5 x 0.7 mm blade (1.6 mm left the soft arm's blade on the tab's edge, run 5)
+tp.SLOT_WIDTH = 2.4 * 1e-3  # the release slot: 2.4 mm wide (across the rail) by the foot's 4.8 mm, 9 mm deep, for a
+# 3.5 x 1.0 mm blade (1.6 mm left the soft arm's blade on the tab's edge, run 5)
 tp.BLOCK_HEIGHT = (36.15 - 7.05) * 1e-3  # the block's top above the lip tops
 tp.TOUCH_WATCH.add("blue")  # the blue block's contact with the robot is measured (released: no contact)
 tp.install()
@@ -86,8 +86,10 @@ TRAY_WALL_TOP = TOP + tp.TRAY_FLOOR + tp.TRAY_WALL_HEIGHT
 TRAY_FLOOR_TOP = TOP + tp.TRAY_FLOOR
 ON_FLOOR = 2 * MM  # "on the tray floor": the block's lowest point within this of the floor's top
 RELEASED_N = 0.05  # "released": the robot presses on the block with less than this (N)
-CREDIT = {"unlatched": 0.25, "off": 0.5, "in_tray": 0.75}
-CAP = CREDIT["unlatched"]  # a beige block disturbed, or the rail moved
+FOOT_CLEAR = 2.0 * MM  # the sprung foot's tooth clears the lip's edge when pushed out this far (in the rail's frame)
+FOOT_ABOVE = -tp.FOOT_BOTTOM  # ... or the near end lifted this far: the foot's lowest point above the lip's top
+CREDIT = {"foot_released": 0.25, "off": 0.5, "in_tray": 0.75}
+CAP = CREDIT["foot_released"]  # a beige block disturbed, or the rail moved
 
 C_RAIL = np.array(tp.local_center("rail"))
 C_BLOCK = np.array(tp.local_center("block"))
@@ -147,6 +149,19 @@ def latched(b) -> bool:
     )
 
 
+def foot_out(b) -> float:
+    """How far the sprung (near) foot's tooth is out past where it sits latched, in the rail's frame (metres): the
+    foot's travel on the block less the block's own shift toward the far side (a block slid toward the far side carries
+    the foot back in under its lip)."""
+    return b["feet_spread"][1] - b["across"]
+
+
+def foot_released(b) -> bool:
+    """The sprung foot measurably released: its tooth pushed out 2.0 mm or more past its latched position (clear of the
+    lip's edge), or the block's near end lifted 6.5 mm or more (the foot's lowest point above the lip's top)."""
+    return bool(foot_out(b) >= FOOT_CLEAR or b["feet"][1] >= FOOT_ABOVE)
+
+
 def off_rail(b) -> bool:
     """Taken off: its base 20 mm or more above the lips, or its centre outside the rail's footprint."""
     return b["height"] >= OFF_RAIL or abs(b["across"]) > tp.LIP_EDGE + 30 * MM or abs(b["along"]) > tp.RAIL_LENGTH / 2
@@ -185,8 +200,8 @@ def stage(objects) -> str | None:
     b = block_on_rail(objects, TARGET)
     if off_rail(b):
         return "off"
-    if not latched(b):
-        return "unlatched"
+    if foot_released(b):
+        return "foot_released"
     return None
 
 
@@ -199,7 +214,8 @@ def success(objects) -> bool:
 
 def score(objects) -> float:
     """Partial credit at the end of the episode (success, which needs the block released on the tray floor for 1 s,
-    scores 1.0): 0.75 the blue block in the tray (released or not), 0.5 off the rail, 0.25 unlatched (pushed off-centre, its sprung foot out, or the block tipped up); capped at 0.25 if a beige block was moved 1 mm
+    scores 1.0): 0.75 the blue block in the tray (released or not), 0.5 off the rail, 0.25 its sprung foot released (the tooth 2 mm out past its latched position, or the near end lifted 6.5 mm; a
+    still-latched block shifted or tipped scores 0); capped at 0.25 if a beige block was moved 1 mm
     or unlatched, or the rail moved 1 cm or turned 3 degrees."""
     credit = CREDIT.get(stage(objects), 0.0)
     return credit if undisturbed(objects) and rail_ok(objects) else min(credit, CAP)

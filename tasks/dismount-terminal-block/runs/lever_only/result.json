@@ -1,0 +1,30 @@
+{
+  "variant": "lever_only",
+  "task_score": 0.25,
+  "terminated": false,
+  "termination_reason": null,
+  "steps": 622,
+  "run_limit_steps": 2400,
+  "final_stage": "foot_released",
+  "undisturbed": true,
+  "rail_shift_mm": 1.1954409562832323e-05,
+  "rail_turn_deg": 0.0,
+  "max_rail_shift_mm": 0.0,
+  "report": {
+    "screwdriver": {
+      "picked": true,
+      "centre_err_mm": 0.468,
+      "in_slot_mm": [
+        0.0,
+        -0.19,
+        1.35
+      ],
+      "lever_lead_mm": 22.1,
+      "foot_spread_mm": 2.2,
+      "foot_out_mm": 2.43,
+      "open_step": 522
+    },
+    "script_done_step": 562
+  },
+  "wall_s": 71.6363878250122
+}

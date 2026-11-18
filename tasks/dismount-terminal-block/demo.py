@@ -2,6 +2,10 @@
 
     python demo.py                    # left arm holds the rail; right arm takes the blue block off, into the tray: 1.0
     python demo.py --variant held     # the same, but the block is lowered onto the tray floor and never let go: 0.75
+    python demo.py --variant lifted   # the same, but the block is held up above the rail after lifting it off: 0.5
+    python demo.py --variant lever_only  # only the screwdriver: the foot levered out and held there, the block left
+                                         # on the rail: 0.25
+    python demo.py --variant no_lever    # the same arm motions as the full demo without the screwdriver: 0
     python demo.py --device cpu       # CPU physics, ~3x faster, for quick checks
 
 It drives the ``yam_arena`` embodiment directly (20 Hz control, object_jitter 0, as a trial runs) and reads the
@@ -23,6 +27,7 @@ import argparse
 import ast
 import json
 import math
+import os
 import shutil
 import subprocess
 import sys
@@ -37,7 +42,7 @@ INSTRUCTION = (
     "Take the blue terminal block off the DIN rail with the screwdriver and put it in the tray, and leave the two beige "
     "blocks where they are."
 )
-VARIANTS = ("full", "held", "no_lever")
+VARIANTS = ("full", "held", "lifted", "no_lever", "lever_only")
 CAMERAS = ("top_cam", "left_cam", "right_cam")
 CONTROL_HZ = 20.0
 DT = 1.0 / CONTROL_HZ
@@ -80,6 +85,11 @@ SD_CENTRE_TOL, SD_CENTRE_TRIES = 0.25 * MM, 6
 LEVER_OPEN = 2.4 * MM  # lever the sprung foot out this far (its tooth clears the lip's edge at 2.0 mm)
 LEVER_RATE, LEVER_MAX = 3 * MM, 30 * MM  # the blade's push toward the arms leads (the arm is soft; 12 mm opened
 # the foot only 1 mm, run 6)
+LEVER_S = 5.0  # the lever's push lasts at most this long
+# lever_only: lever until the foot's tooth is this far out in the rail's frame, the push lasting at most this long
+LEVER_ONLY_OPEN = float(os.environ.get("DTB_LEVER_ONLY_OPEN_MM", "2.4")) * MM
+LEVER_ONLY_S = float(os.environ.get("DTB_LEVER_ONLY_S", "12.0"))
+LEVER_ONLY_MAX = float(os.environ.get("DTB_LEVER_ONLY_MAX_MM", "40")) * MM
 GRIP_LEAN = math.radians(20.0)  # the right hand leans so its body is beyond the block's far end (upright, it met the
 # left hand's screwdriver over the block, runs 3-6)
 SD_FOLLOW = 8 * MM  # while the right arm tips the block, the blade follows the near end up this far
@@ -278,14 +288,21 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         base_pos = arm.pos.copy()
         lead = 0.0
         phase["left"] = "lever the foot out"
-        for _ in range(round(5.0 / DT)):
-            if on_rail()["feet_spread"][1] >= LEVER_OPEN:
+        only = variant == "lever_only"
+        for _ in range(round((LEVER_ONLY_S if only else LEVER_S) / DT)):
+            if (task.foot_out(on_rail()) >= LEVER_ONLY_OPEN) if only else (on_rail()["feet_spread"][1] >= LEVER_OPEN):
                 break
-            lead = min(lead + LEVER_RATE * DT, LEVER_MAX)
+            lead = min(lead + LEVER_RATE * DT, LEVER_ONLY_MAX if only else LEVER_MAX)
             arm.pos = base_pos - np.array([lead, 0.0, 0.0])
             yield
         rep["lever_lead_mm"], rep["foot_spread_mm"] = round(lead / MM, 1), round(on_rail()["feet_spread"][1] / MM, 2)
+        rep["foot_out_mm"] = round(task.foot_out(on_rail()) / MM, 2)
         rep["open_step"] = world["step"]
+        if only:  # hold the foot out with the blade; the right arm never comes: the block stays on the rail
+            phase["left"] = "hold the foot out"
+            report["script_done_step"] = world["step"] + round(2.0 / DT)
+            while True:
+                yield
         flags.add("foot_open")
         yield from wait_for(arm, "gripped", "hold the foot out")
         # follow the near end up while the right arm tips the block (the foot stays out), then pull the blade out
@@ -307,6 +324,10 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         # 1. the left arm levers the sprung foot out with the screwdriver first (the right arm waits where it starts:
         # waiting over the block, the two hands met, run 3)
         yield from wait_for(arm, "foot_open", "wait for the foot to be levered out")
+        if variant == "lever_only":
+            phase["right"] = "idle"
+            while True:
+                yield
         o, r = block()
         lean = rot_y(GRIP_LEAN) @ arm.down
         approach = lean[:, 2]
@@ -351,6 +372,11 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
         # 4. lift it clear (take the lead back out first, so it comes straight up)
         yield from move(arm, arm.pos + (-lead + 2 * MM, 0, 0.06), 1.5, label="lift it clear")
         report["off_step"] = world["step"]
+        if variant == "lifted":  # hold it up above the rail, off it but never carried to the tray
+            phase["right"] = "hold it above the rail"
+            report["script_done_step"] = world["step"] + round(3.0 / DT)
+            while True:
+                yield
         # to the tray
         spot = np.array([task.TRAY_ORIGIN[0], task.TRAY_ORIGIN[1], task.TOP + tp.TRAY_FLOOR])
         yield from move(arm, (spot[0], spot[1], arm.pos[2] + 0.02), 2.5, rot=arm.down, label="carry it")
@@ -409,7 +435,7 @@ def run(variant: str, out: Path, video: bool, max_steps: int, emb=None) -> dict:
             row[n] = {"along_mm": round(b["along"] / MM, 2), "across_mm": round(b["across"] / MM, 2),
                       "h_mm": round(b["height"] / MM, 2), "feet_mm": [round(f / MM, 2) for f in b["feet"]],
                       "spread_mm": [round(t / MM, 2) for t in b["feet_spread"]], "tilt": round(b["tilt_deg"], 2),
-                      "latched": task.latched(b)}
+                      "latched": task.latched(b), "foot_out_mm": round(task.foot_out(b) / MM, 2)}
         for side in ("left", "right"):
             row[f"{side[0]}_cmd"] = [round(float(v), 4) for v in arms[side].pos]
             row[f"{side[0]}_meas"] = [round(float(v), 4) for v in measured_tcp(side)[0]]

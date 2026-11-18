@@ -19,10 +19,19 @@ holds the foot out with the screwdriver while the right arm tips the block and t
 
 | review point | what changed |
 | --- | --- |
+| **Construct validity:** the no-screwdriver variant earned credit by shifting the still-latched block | `no_lever` now scores **0**: its sprung foot never moves more than 0.1 mm out past where it sits latched (measured against the rail), and the block's 2.9 mm slide carries the foot back in under its lip. |
+| **Scoring:** the 0.25 tier rewarded small shifts or tilts | 0.25 now needs a **measurable release of the sprung foot**: its tooth 2.0 mm out past its latched position, measured against the rail (clear of the lip's edge), or the near end lifted 6.5 mm (the foot above the lip). A shifted or tipped block still latched scores 0. A new variant, `lever_only`, shows the tier: the screwdriver levers the foot 2.45 mm out and holds it there (0.25). |
+| **Clarity and reproducibility:** the README's 1.6 mm tab and slot coordinates disagreed with the 3.0 mm tab and 2.4 mm slot that are implemented | *The latch* now gives the implemented geometry: cheek x -30.0 to -27.8 mm, slot 2.4 mm (x -32.4 to -30.0 mm) by 4.8 mm, tab 3.0 mm (x -35.4 to -32.4 mm). The blade is given as 3.5 x 1.0 mm everywhere. It fits the slot with 1.4 mm of play across and 1.3 mm along, and it is put in 0.2 mm from the slot's middle in every screwdriver run. |
+| **Rerun the scoring demonstrations** | All variants were rerun with the new scoring, and a `lifted` variant now covers the 0.5 tier: `full` 1.0, `held` 0.75, `lifted` 0.5, `lever_only` 0.25, `no_lever` 0. Dream-1 stays at 0.0: its block stayed latched, and the stricter tier can't raise a score. |
+
+## Changes after the first review
+
+| review point | what changed |
+| --- | --- |
 | **Construct validity:** the removal depended on 2.5 mm of fixed-hook deflection, not on how the work is done | The fixed hook is now **rigid** (no deflection at all). The block is released the way DIN-rail terminal blocks are normally removed: a flat screwdriver in the **release slot** at the sprung foot levers the foot out, then the block is tipped and slid off its fixed hook. The old push no longer releases anything: the `no_lever` variant (the same arm motions without the screwdriver) leaves the block on the rail. |
 | **Clarity and reproducibility:** latch geometry and release force not specified | New section *The latch*: every latch dimension (hook and foot reach, foot travel, slot size and position, tab), the foot's spring (1.0 N/mm) and the **release force (2.0 N at the lip's edge)**, specified as a buildable equivalent of this task's own design. |
 | **Include any tool required for normal removal** | A **flat-blade screwdriver** (3.5 mm blade) in a holder is now part of the scene; the instruction names it. |
-| **Update setup, fidelity note and demonstration** | Setup, scoring notes, fidelity note and `task.json` describe the new mechanism. The rail is now screwed down (as on a mounting plate), so one arm uses the screwdriver while the other takes the block off. New demo (1.0), new variants (`held` 0.75, `no_lever` 0.25), new Dream-1 run (0.0). The old push-based benches and runs were removed. |
+| **Update setup, fidelity note and demonstration** | Setup, scoring notes, fidelity note and `task.json` describe the new mechanism. The rail is now screwed down (as on a mounting plate), so one arm uses the screwdriver while the other takes the block off. New demo (1.0), new variants (`held` 0.75, `no_lever`), new Dream-1 run (0.0). The old push-based benches and runs were removed. |
 
 ## Files
 
@@ -32,6 +41,7 @@ holds the foot out with the screwdriver while the right arm tips the block and t
 | `tb_parts.py` | the rail, the tray, the screwdriver and its holder, and the jointed terminal block (this task's own generic push-in block: rigid fixed hook, sprung foot with a release slot), the USD writer, and the hook that lets yam_arena spawn the parts |
 | `demo.py` | scripted two-arm demo, closed loop on the simulated object poses, and its variants |
 | `runs/full/` | the full demo run: `result.json`, `setup.png`; its video (the three cameras in one) is the task's uploaded demo video |
+| `runs/held/`, `runs/lifted/`, `runs/lever_only/`, `runs/no_lever/` | the other variants' `result.json` |
 | `runs/dream1/` | the Dream-1 run: `eval_log.json.gz`; its video is the task's uploaded model-run video |
 | `task.json` | submission metadata |
 
@@ -53,7 +63,9 @@ Scripted demo (drives the same embodiment and task-file scoring directly):
 
     python demo.py --device cpu                       # result.json, steps.jsonl, one video per camera
     python demo.py --device cpu --variant held        # the block is lowered onto the tray floor and held (0.75)
-    python demo.py --device cpu --variant no_lever    # the same arm motions, but without the screwdriver
+    python demo.py --device cpu --variant lifted      # the block lifted off the rail and held above it (0.5)
+    python demo.py --device cpu --variant no_lever    # the same arm motions, but without the screwdriver (0)
+    python demo.py --device cpu --variant lever_only  # only the screwdriver: the foot levered out and held (0.25)
     python demo.py --device cpu --no-video
 
 ## The scene
@@ -65,7 +77,7 @@ Scripted demo (drives the same embodiment and task-file scoring directly):
   beige from the left; the blue one 2 cm right of the rail's centre. Each is polyamide, 7.6 g, 5.1 mm thick (along
   the rail), 65 mm long (across it) and 36 mm tall (29 mm above the rail). The fixed hook is at the far end (away
   from the arms), the sprung foot and its release slot at the near end. See *The latch*.
-- **Screwdriver and holder:** a flat-blade electrician's screwdriver (blade 3.5 x 0.7 mm, 10 mm long; 3 mm shaft;
+- **Screwdriver and holder:** a flat-blade electrician's screwdriver (blade 3.5 mm wide, 1.0 mm thick, 10 mm long; 3 mm shaft;
   20 mm square handle 45 mm long; 75 mm overall; 60 g), standing handle up in a black plastic holder (40 x 40 mm,
   50 mm tall, a 9 mm hole). The holder's centre is 0.20 m in front of the arm bases and 0.08 m left of their
   midline.
@@ -84,8 +96,8 @@ tops.
 | fixed hook (far end) | rigid, part of the housing; its tooth reaches 2.5 mm in under the far lip, 0.3 mm below the lip's underside |
 | sprung foot (near end) | slides outward (toward the arms) on a straight guide, up to 3.5 mm; its tooth reaches 2.0 mm in under the near lip, so it clears the lip's edge after 2.0 mm |
 | foot spring | 1.0 N/mm, preloaded to 0 at rest: **the release force is 2.0 N at 2.0 mm (clear of the lip), 2.4 N at the demo's 2.4 mm**, pushed outward at the foot |
-| release slot | at the near end, open at the top: 2.4 mm wide (across the rail) x 5.1 mm (the block's thickness), 9 mm deep, between a fixed cheek on the housing (x -30.0 to -27.8 mm) and an L-shaped tab on the foot (an upright 1.6 mm thick, x -33.2 to -31.6 mm, and a floor under the slot) |
-| how a screwdriver opens it | a 3.5 x 0.5-0.7 mm blade goes in the slot from above; levering or pushing it outward pushes the tab, and with it the foot, out |
+| release slot | at the near end, open at the top: 2.4 mm wide (across the rail, x -32.4 to -30.0 mm) x 4.8 mm (along it, the foot's width), 9 mm deep, between a fixed cheek on the housing (x -30.0 to -27.8 mm, 2.2 mm thick) and an L-shaped tab on the foot (an upright 3.0 mm thick, x -35.4 to -32.4 mm, and a 1 mm floor under the slot); all three move out with the foot except the cheek |
+| how a screwdriver opens it | a 3.5 mm flat blade, 0.5-1.0 mm thick, goes in the slot from above, its 3.5 mm width along the rail: with the simulation's 1.0 mm blade that leaves 1.4 mm of play across and 1.3 mm along. Levering or pushing it outward pushes the tab, and with it the foot, out |
 | seat pads | two pads on the base press down on the lips with 3 N/mm (the clamp of a latched block) |
 
 The rail's lips are 17.5 mm from its centreline at their outer edges.
@@ -99,7 +111,7 @@ At the end of the episode:
 | 1.0 | success: the blue block **released and resting on the tray's floor**, still, held for 1 s in a row, with both beige blocks undisturbed |
 | 0.75 | the blue block in the tray (its centre inside the tray's inner walls, its lowest point below their tops), released or still held |
 | 0.5 | the blue block **off the rail**: its base 20 mm or more above the lips, or its centre outside the rail's footprint |
-| 0.25 | the blue block **unlatched**: moved more than 1 mm off-centre across the rail, its sprung foot out more than 1 mm, its seat pads no longer pressed by the lips, its base lifted off the lips (more than 0.8 mm at either lip edge), or tipped or turned more than 3 degrees |
+| 0.25 | the blue block's **sprung foot released**: its tooth 2.0 mm or more out past its latched position, measured against the rail (so clear of the lip's edge), or the block's near end lifted 6.5 mm or more off the lip (the foot's lowest point above the lip's top). A block that is shifted or tipped but still has its foot under the lip scores 0 |
 | 0 | otherwise |
 
 - **Undisturbed:** each beige block still latched (base within -0.5..+0.8 mm of the lip tops at both lip edges,
@@ -111,10 +123,10 @@ At the end of the episode:
   2 mm of the tray floor's top, so the tray, not the gripper, holds it up. Both must hold for the whole 1 s.
 - **Still:** under 10 mm/s and 0.5 rad/s, from the block's pose change over the last control step.
 
-In a real trial these are read with a ruler, a feeler gauge and a photo: whether the blue block lies in the tray with
-the gripper open and clear of it (no contact), off
-the rail or visibly shifted or tipped on it; whether the beige blocks have moved along the rail (marks on the rail)
-or come loose.
+In a real trial these are read with a ruler, calipers and a photo: whether the blue block lies in the tray with
+the gripper open and clear of it (no contact) or is off the rail; for 0.25, the foot's outer face against a mark on
+the rail made where it sat latched (2.0 mm out) or the near end's height above the lip (6.5 mm); whether the beige
+blocks have moved along the rail (marks on the rail) or come loose.
 
 No unintended strategy scores: the latched block can't be pulled, pushed or levered off the rail without opening its
 sprung foot (its fixed hook is rigid), and the foot can only be opened through the release slot. Prying the beige
@@ -128,9 +140,12 @@ Scripted demo, CPU physics (`--device cpu`), 20 Hz control, object jitter 0, run
 | --- | --- | --- |
 | `full` | **1.0** (success at step 933) | the screwdriver picked from its holder; the blade lined up over the release slot (within 0.5 mm) and put in (0.2 mm from the slot's middle, 1.4 mm above its floor) by step 375; levered: the foot out 1.1 mm by step 475; the right hand grips the block's far end and tips it while the blade holds the foot out (the foot out up to 3.5 mm); slid 3.8 mm toward the far side (the hook out) by step 796; off the rail at step 826; released on the tray floor with no robot contact; the beige blocks undisturbed |
 | `held` | **0.75** | the same until the tray; the block is lowered onto the tray floor and held there to the end: in the tray, never released |
-| `no_lever` | **0.25** | the same arm motions without the screwdriver (it stays in its holder): the right hand tips and slides the block, but the sprung foot stays under its lip and the block stays on the rail (moved, so unlatched) |
+| `lifted` | **0.5** | the same as `full` until the block is lifted off the rail (step 826); then held 41 mm above the lips to the end, never carried to the tray |
+| `lever_only` | **0.25** | only the screwdriver: picked, put in the release slot, levered until the foot's tooth is 2.4 mm out past its latched position (by step 522, the command leading by 22 mm), then held there to the end (2.45 mm out); the right arm stays where it starts; the beige blocks undisturbed |
+| `no_lever` | **0** | the same arm motions as `full` without the screwdriver (it stays in its holder): the right hand tips and slides the block 2.9 mm toward the far side, but the sprung foot never comes more than 0.1 mm out past its latched position and the block stays on the rail |
 
-`no_lever` shows the release really needs the screwdriver: without it the block doesn't come off.
+`no_lever` shows the release really needs the screwdriver: without it the block doesn't come off and nothing scores.
+Each variant's `result.json` is in `runs/<variant>/`.
 
 The arms are soft in the simulation: the lever and the slide each need the command to lead the hand by 15-31 mm.
 
@@ -180,8 +195,9 @@ No third-party assets: the rail, the tray, the screwdriver and its holder and th
 - **The latch:** the sprung foot's plastic flexure is a 1 N/mm slider (release 2.0 N at the lip's edge). This is
   this task's specification for a physically built equivalent (e.g. a 3D-printed block with a 1 N/mm spring on the
   foot), not a measured value of a commercial block. The fixed hook is rigid.
-- **The blade** is 3.5 x 1.0 mm (a 0.7 mm blade tunnelled through the foot's tab in PhysX). The slot is 2.4 mm wide,
-  so the soft simulated arm can place the blade.
+- **The blade** is 3.5 x 1.0 mm (a 0.7 mm blade tunnelled through the foot's tab in PhysX), and the tab is 3.0 mm
+  thick (a 1.6 mm tab let the blade tunnel through). The 2.4 mm slot takes any 3.5 mm blade 0.5-1.0 mm thick, and
+  leaves the soft simulated arm room to place it.
 - **The block's collision shape** is simplified (two boxes, plus convex pieces for the feet and the slot); its look is
   a generic outline, not a particular product's.
 - **The rail's lips** are 2 mm thick (1 mm on a real rail): at 240 Hz a 1 mm lip lets parts tunnel through.
