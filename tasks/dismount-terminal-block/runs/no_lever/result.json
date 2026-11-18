@@ -3,22 +3,23 @@
   "task_score": 0.0,
   "terminated": false,
   "termination_reason": null,
-  "steps": 457,
+  "steps": 467,
   "run_limit_steps": 2400,
   "final_stage": null,
   "undisturbed": true,
-  "rail_shift_mm": 1.1954409562832323e-05,
+  "rail_shift_mm": 7.208220144337815e-06,
   "rail_turn_deg": 0.0,
   "max_rail_shift_mm": 0.0,
   "report": {
     "screwdriver": {},
-    "tipped_step": 209,
-    "tip_deg": 0.1,
-    "unhooked_step": 231,
-    "slide_lead_mm": 11.0,
-    "unhooked_mm": 3.6,
-    "off_step": 261,
-    "script_done_step": 397
+    "tipped_step": 181,
+    "tip_deg": 0.2,
+    "tip_near_lift_mm": 0.29,
+    "unhooked_step": 241,
+    "slide_lead_mm": 30.0,
+    "unhooked_mm": 2.78,
+    "off_step": 271,
+    "script_done_step": 407
   },
-  "wall_s": 31.0919668674469
+  "wall_s": 164.4610915184021
 }

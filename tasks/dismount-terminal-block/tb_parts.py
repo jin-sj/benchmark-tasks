@@ -18,7 +18,8 @@ The parts (dimensions in mm in the comments, metres in code):
 - block (an articulation of five bodies: housing, two feet, two seat pads): a generic terminal block of this
   project's own design, in two models. "SYM": a screw-clamp feed-through block with a sprung foot at each end,
   5.1 thick, 60 long across the rail, 46.25 tall from the bottom of its feet (39.5 above the rail). "HOOK": a
-  push-in block with a fixed hook at one end and a sprung foot at the other, 5.1 thick, 65 long, 36 tall. Their
+  push-in block with a fixed hook at one end and a sprung foot at the other, 65 long, 36 tall (5.1 thick by default;
+  task.py makes it 6.2). Their
   outlines are simple polygons coded below as plain coordinates. Each sprung foot is its own link on a prismatic
   joint across the rail, sprung inward by a joint drive: a stand-in for a real foot's plastic flexure beams.
 - tray (a fixed collider): an open tray with low walls and no slots.
@@ -159,8 +160,9 @@ SLOT_WIDTH = 1.6 * MM  # the slot between the cheek and the foot's tab (a 0.7 mm
 TAB_THICK = 1.6 * MM  # the foot's tab, outward of the slot
 SLOT_FLOOR = 0.0  # the slot's floor (the foot's tab turns in under the slot), its top at this height
 HOOK_SLOT_CHEEK = (30.0 * MM, 27.8 * MM)  # HOOK block: the cheek from x -30.0 to -27.8 mm (the housing's near end);
-# the slot from -31.6 to -30.0, the tab from -33.2 to -31.6 (the screwdriver's 3 mm shaft clears the housing by 1.5 mm)
+# with the task's SLOT_WIDTH 2.4 mm and TAB_THICK 3.0 mm: the slot from -32.4 to -30.0, the tab from -35.4 to -32.4
 SNAP_SPRING = 1000.0  # N/m along the slide
+SLOT_LENGTH = 4.8 * MM  # HOOK block: the release slot's length along the rail, between the housing's side walls
 PAD_PROUD = 1.2 * MM  # a free pad's face below the housing's seat; latched it is squeezed to TOOTH_PLAY
 PAD_X = (13.6 * MM, 15.4 * MM)  # pads' extent across the rail (over the lip tops, 13.5..17.5)
 PAD_THICK = 1.2 * MM
@@ -203,6 +205,60 @@ BEIGE_Y = (LEFT_BRACKET_Y[0] - BLOCK_WIDTH, LEFT_BRACKET_Y[0])
 BEIGE_FACE_Y = BEIGE_Y[0]
 SLOT_Y = BEIGE_FACE_Y - BLOCK_WIDTH / 2  # centre of a block flush against the beige block
 
+# -- the control panel around the rail (fixed, part of the rail's static body) ---------------------------------------
+# A steel mounting plate under the rail, a closed PVC wiring duct along each side of it, the rest of the terminal strip
+# (blocks fixed to the rail: their housings collide, their feet are looks) and the neighbours' wires, each running
+# from a block's wire entry (at either end) straight into the duct on that side. Rail frame, metres: x across the rail
+# (toward the arms negative), y along it, z up from the plate's top (the rail's web lies on the plate).
+PANEL = False
+PLATE = (-0.115, 0.125, -0.140, 0.140, 2.5 * MM)  # x0, x1, y0, y1, thickness (below z 0)
+DUCT_SIZE = (40.0 * MM, 40.0 * MM)  # width (across the rail), height
+DUCT_GAP = 30.0 * MM  # from each end of a block (the near tab's face, the far face) to the duct's wall
+DUCT_SLOT = (4.0 * MM, 12.5 * MM, 8.0 * MM)  # the duct walls' wire slots: width, pitch, depth left below them
+STATIC_BLOCKS: tuple = ()  # y of the strip's other blocks (fixed to the rail)
+WIRED: tuple = ()  # y of the blocks with a wire in each end
+WIRE_OD = 3.0 * MM  # 1.5 mm2 PVC-insulated stranded wire
+WIRE_Z = 11.25 * MM  # the wire entries' axis above the lip tops (block frame)
+BLOCK_NEAR_X = -35.4 * MM  # the block's ends (block frame): the near tab's face ...
+BLOCK_FAR_X = 37.0 * MM  # ... and the far end
+BLOCK_NEAR_FACE = -27.8 * MM  # the near end face above the release slot, where the near wire enters
+
+
+def duct_x() -> tuple[tuple[float, float], tuple[float, float]]:
+    """(near duct x0, x1), (far duct x0, x1) in the rail frame."""
+    n1 = BLOCK_NEAR_X - DUCT_GAP
+    f0 = BLOCK_FAR_X + DUCT_GAP
+    return (n1 - DUCT_SIZE[0], n1), (f0, f0 + DUCT_SIZE[0])
+
+
+def panel_shapes() -> list[Shape]:
+    x0, x1, y0, y1, t = PLATE
+    out = [_box("rail", "zinc", "steel", x0, x1, y0, y1, -t, 0.0)]
+    w, h = DUCT_SIZE
+    sw, pitch, keep = DUCT_SLOT
+    for i, (d0, d1) in enumerate(duct_x()):
+        out.append(_box("rail", "duct", "plastic", d0, d1, y0, y1, 0.0, h))
+        inner = d1 if i == 0 else d0  # the wall facing the strip: its wire slots (looks)
+        s = 1 if i == 0 else -1
+        n = int((y1 - y0) // pitch)
+        for k in range(n):
+            yc = y0 + (k + 0.5) * pitch
+            out.append(_box("rail", "hole", None, *sorted((inner, inner + s * 0.1 * MM)), yc - sw / 2, yc + sw / 2,
+                            keep, h - 0.6 * MM))
+        out.append(_box("rail", "duct_lid", None, d0 - 0.5 * MM, d1 + 0.5 * MM, y0, y1, h, h + 0.6 * MM))
+    lip = RAIL_HEIGHT + SEATED_HEIGHT  # block frame z 0 in the rail frame
+    for y in STATIC_BLOCKS:
+        out += [_lift(sh, lip) for sh in hook_shapes("rail", "beige", y, feet="visual")]
+    (n0, n1), (f0, f1) = duct_x()
+    z = lip + WIRE_Z
+    r = WIRE_OD / 2
+    for y in WIRED:
+        for a, b in ((n1, BLOCK_NEAR_FACE - 0.5 * MM), (BLOCK_FAR_X + 0.5 * MM, f0)):
+            out.append(Shape("rail", "wire", None, ((a + b) / 2, y, z), radius=r, length=b - a, axis="X"))
+            out.append(Shape("rail", "wire", "plastic", ((a + b) / 2, y, z), (b - a, WIRE_OD, WIRE_OD), visible=False))
+    return out
+
+
 # -- tray ---------------------------------------------------------------------------------------------------
 TRAY_INNER = (170.0 * MM, 64.0 * MM)  # x, y
 TRAY_WALL = 3.0 * MM
@@ -232,6 +288,9 @@ LOOKS = {  # sRGB, roughness, metallic
     "hole": ((0.03, 0.03, 0.035), 0.9, 0.0),
     "tray": ((0.18, 0.19, 0.21), 0.7, 0.0),
     "handle": ((0.80, 0.16, 0.12), 0.6, 0.0),
+    "duct": ((0.60, 0.61, 0.60), 0.7, 0.0),
+    "duct_lid": ((0.66, 0.67, 0.66), 0.7, 0.0),
+    "wire": ((0.04, 0.04, 0.045), 0.6, 0.0),
 }
 CONTACT_OFFSET = 0.5 * MM
 
@@ -288,19 +347,35 @@ _HOOK_BODY_LOOK = (
      (33.5, 34.0), (23.5, 34.0), (22.5, 36.15), (16.0, 36.15), (16.0, 31.0), (12.0, 31.0), (12.0, 36.15), (5.0, 36.15),
      (5.0, 29.0), (1.6, 29.0), (1.6, 25.5), (0.8, 25.5), (0.8, 13.4), (1.8, 12.4), (13.4, 12.4)),
 )
-_HOOK_FOOT_LOOK = (  # the sprung foot and its flexure, which move with the foot
-    ((0.8, 0.0), (10.0, 0.0), (12.8, 4.0), (12.8, 5.4), (10.6, 5.4), (10.6, 12.4), (5.2, 12.4), (5.2, 5.4),
-     (0.8, 5.4)),
+_HOOK_FOOT_LOOK = (  # the sprung foot's body below its head and tongue (BUILD_FOOT), which move with it
+    ((0.8, 0.0), (10.0, 0.0), (12.8, 4.0), (12.8, 5.4), (0.8, 5.4)),
 )
 _HOOK_HULLS = (  # collision: the housing as two boxes (upper body; the lower middle over the rail)
     ((65.6, 12.4), (65.6, 36.15), (0.8, 36.15), (0.8, 12.4)),
     ((42.8, 7.35), (42.8, 12.4), (13.4, 12.4), (13.4, 7.35)),
 )
-_HOOK_HOLES = (  # looks: the two wire entries and a test hole
-    ((2.6, 17.0), (5.0, 17.0), (5.0, 19.5), (2.6, 19.5)),
-    ((61.4, 17.0), (63.8, 17.0), (63.8, 19.5), (61.4, 19.5)),
+_HOOK_HOLES = (  # looks: a test hole (the wire entries are in the end faces: BUILD_WIRE_ENTRY)
     ((30.5, 14.0), (33.0, 14.0), (33.0, 16.5), (30.5, 16.5)),
 )
+
+# -- the block's build features (block frame: x across the rail, z up from the lip tops, mm) ---------------------------
+# The parts that hold the latch together and spring it, identical in the simulation (looks) and in the printable parts
+# (build/). The simulation springs the foot with its joint drive; the printed block with a steel compression spring.
+# Sprung foot: a head (full latch width) facing the spring, then a tongue that slides between two guide walls under the
+# housing and carries a slot for the guide pin; the pin at the slot's outer end is the foot's rest (inner) stop, at
+# its inner end the outward stop (FOOT_TRAVEL). Half-widths None: the latch parts' (FOOT_HALF_WIDTH).
+BUILD_FOOT_HEAD = (-23.4, -22.2, -1.65, 5.25, None)  # x0, x1, z0, z1, half-width along the rail
+BUILD_FOOT_TONGUE = (-22.2, -16.0, -1.65, 5.25, 1.15)
+BUILD_FOOT_BOSS = (-24.4, -23.4, 2.7, 4.3, 0.8)  # centres the spring's end on the head
+BUILD_FOOT_WEB = (-32.4, -27.0, -2.0, -1.0, None)  # joins the tab's floor to the sole
+BUILD_TONGUE_SLOT = (-21.75, -17.75, 2.7, 4.3)  # through the tongue, along the rail: the guide pin's slot
+BUILD_GUIDE_WALLS = (-22.0, -15.7, 1.0, 5.35, 1.25)  # housing: x0, x1, z0, z1, inner half-width (outer: the housing)
+BUILD_GUIDE_PIN = (-21.0, 3.5, 1.5, 6.0)  # x, z, diameter, length (a steel dowel pin along the rail, through the walls)
+BUILD_SPRING_SEAT = (-29.0, -27.8, 1.9, 5.1, 1.6)  # housing: the spring's seat, a pocket in the cheek's inner face
+BUILD_SPRING = (0.3, 3.0, 5.6, 3.5)  # wire, outer diameter, free (= installed) length, axis height z (mm)
+BUILD_HOOK_WEB = (17.8, 21.0, 0.5, 5.35, None)  # housing: joins the fixed hook to the housing
+BUILD_PAD_LEAF = (5.5, 15.4, 1.0, 1.3)  # the seat pads' flexures: root |x|, tip |x|, thickness, slit above it
+BUILD_WIRE_ENTRY = (8.0, 3.2)  # wire entries in both end faces at WIRE_Z: depth, square side
 
 
 BLOCK_MODEL = "SYM"  # "SYM": screw-clamp block (symmetric sprung feet); "HOOK": push-in block (fixed hook + sprung foot, release pocket)
@@ -309,6 +384,34 @@ BLOCK_MODEL = "SYM"  # "SYM": screw-clamp block (symmetric sprung feet); "HOOK":
 # sole's inner part and an upright rim
 FOOT_SOLE = ((19.2, 25.0, -7.0, -2.8), (25.0, 27.0, -7.0, -5.0), (27.0, 28.5, -7.0, -1.8))  # u0, u1, z0, z1
 HOOK_REACH = 2.5  # mm: the fixed hook's tooth reaches this far in under its lip
+
+
+def _mbox(body, look, x0, x1, z0, z1, y, hw, material=None) -> Shape:
+    """A box from block-frame mm (x0..x1, z0..z1, half-width hw mm about y in m; None: the latch parts')."""
+    hw = FOOT_HALF_WIDTH / MM if hw is None else hw
+    return _box(body, look, material, x0 * MM, x1 * MM, y - hw * MM, y + hw * MM, z0 * MM, z1 * MM)
+
+
+def build_looks(body: str, foot: str, look: str, y: float) -> list[Shape]:
+    """The build features as looks (they touch nothing outside the block): the foot's head, tongue, boss and web,
+    the housing's guide walls, the fixed hook's web, the guide pin and the wire entries."""
+    out = [_mbox(foot, look, *BUILD_FOOT_HEAD[:4], y, BUILD_FOOT_HEAD[4]),
+           _mbox(foot, look, *BUILD_FOOT_TONGUE[:4], y, BUILD_FOOT_TONGUE[4]),
+           _mbox(foot, look, *BUILD_FOOT_BOSS[:4], y, BUILD_FOOT_BOSS[4]),
+           _mbox(foot, look, *BUILD_FOOT_WEB[:4], y, BUILD_FOOT_WEB[4]),
+           _mbox(body, look, *BUILD_HOOK_WEB[:4], y, BUILD_HOOK_WEB[4])]
+    x0, x1, z0, z1, hw = BUILD_GUIDE_WALLS
+    for s in (1, -1):
+        out.append(_box(body, look, None, x0 * MM, x1 * MM, *sorted((y + s * hw * MM, y + s * BLOCK_WIDTH / 2)),
+                        z0 * MM, z1 * MM))
+    px, pz, pd, pl = BUILD_GUIDE_PIN
+    out.append(Shape(body, "steel", None, (px * MM, y, pz * MM), radius=pd / 2 * MM, length=pl * MM + 0.1 * MM, axis="Y"))
+    depth, side = BUILD_WIRE_ENTRY
+    wz = WIRE_Z / MM
+    for xf in (BLOCK_NEAR_FACE / MM, BLOCK_FAR_X / MM):
+        s = 1 if xf > 0 else -1
+        out.append(_mbox(body, "hole", *sorted((xf, xf + s * 0.06)), wz - side / 2, wz + side / 2, y, side / 2))
+    return out
 
 
 def _hook_frame(pts):
@@ -328,6 +431,7 @@ def hook_shapes(body: str, look: str, y: float, collide: bool = True, feet: str 
     out = [_prism(body, look, None, _hook_frame(p), y0, y1) for p in _HOOK_BODY_LOOK]
     out += [_prism("foot_n" if own else body, look, None, _hook_frame(p), y0, y1) for p in _HOOK_FOOT_LOOK]
     out += [_prism(body, "hole", None, _hook_frame(p), y0 - 0.05 * MM, y1 + 0.05 * MM) for p in _HOOK_HOLES]
+    out += build_looks(body, "foot_n" if own else body, look, y)
     if collide:
         out += [_prism(body, look, mat, _hook_frame(h), y0, y1, visible=False) for h in _HOOK_HULLS]
     if feet is None:
@@ -338,17 +442,22 @@ def hook_shapes(body: str, look: str, y: float, collide: bool = True, feet: str 
         x1 = LIP_INNER - SHEET - ARM_PLAY * MM
         out.append(Shape(body, look, mat, (x1 - 0.4 * MM, y, -0.65 * MM), (0.8 * MM, 2 * FOOT_HALF_WIDTH, 1.7 * MM),
                          visible=False))
-    if RELEASE_SLOT and own:
+    if RELEASE_SLOT:
         # the release slot at the near (-x) end, open at the top for a flat screwdriver blade: a cheek on the housing,
         # and on the sprung foot an L-shaped tab (an upright beyond the slot and a floor under it). A blade in the
-        # slot, levered outward, pushes the tab and with it the foot out from under the lip.
+        # slot, levered outward, pushes the tab and with it the foot out from under the lip. (A block that is part of
+        # the rail: housing and cheek collide, the foot's tab is a look.)
         c0, c1 = HOOK_SLOT_CHEEK
         t0 = c0 + SLOT_WIDTH
         bmat = "polyamide" if collide else None
-        smat = "latch" if collide else None
+        smat = "latch" if collide and own else None
+        tab = "foot_n" if own else body
         out.append(_box(body, look, bmat, -c0, -c1, fw0, fw1, SLOT_Z[0], SLOT_Z[1]))
-        out.append(_box("foot_n", look, smat, -(t0 + TAB_THICK), -t0, fw0, fw1, SLOT_FLOOR - 1.0 * MM, SLOT_Z[1]))
-        out.append(_box("foot_n", look, smat, -t0, -c1, fw0, fw1, SLOT_FLOOR - 1.0 * MM, SLOT_FLOOR))
+        for s in (1, -1):  # the slot's side walls (housing): the opening is closed along the rail, SLOT_LENGTH long
+            out.append(_box(body, look, bmat, -t0, -c0, *sorted((y + s * SLOT_LENGTH / 2, y + s * BLOCK_WIDTH / 2)),
+                            SLOT_Z[0], SLOT_Z[1]))
+        out.append(_box(tab, look, smat, -(t0 + TAB_THICK), -t0, fw0, fw1, SLOT_FLOOR - 1.0 * MM, SLOT_Z[1]))
+        out.append(_box(tab, look, smat, -t0, -c1, fw0, fw1, SLOT_FLOOR - 1.0 * MM, SLOT_FLOOR))
     for name, s, reach in (("foot_p", 1, HOOK_REACH), ("foot_n", -1, None)):
         fbody = name if own else body
         pieces = _foot_profile(False, reach)
@@ -450,6 +559,8 @@ def rail_shapes() -> list[Shape]:
                                                      (top, BRACKET_TOP), (-top, BRACKET_TOP)), y0, y1))
         out.append(_box("rail", "zinc", "steel", -(LIP_INNER - SHEET) + 0.5 * MM, LIP_INNER - SHEET - 0.5 * MM,
                         y0, y1, SHEET, RAIL_HEIGHT))
+    if PANEL:
+        out += panel_shapes()
     if not RAIL_BEIGE:
         return out
     # the beige block, mounted against the left bracket: its housing collides, its feet are looks only
@@ -491,9 +602,9 @@ def tray_shapes() -> list[Shape]:
 
 
 # -- screwdriver and its holder -------------------------------------------------------------------------------------
-# A flat-blade screwdriver (origin at the blade's tip, its axis along z): blade 3.5 x 0.7 mm, 10 mm long; shaft 5 mm
-# square (a round look), 65 mm; handle 20 mm square (a round look), 100 mm.
-BLADE = (1.0 * MM, 3.5 * MM, 10 * MM)  # 3.5 x 1.0 mm (0.7 mm passed through the foot's tab, runs 7-8)
+# A flat-blade screwdriver (origin at the blade's tip, its axis along z): blade 4.0 x 0.8 mm (ISO 2380 size), 10 mm
+# long; shaft 3 mm, the tip to the handle 30 mm; handle 20 mm square, 45 mm; 75 mm overall.
+BLADE = (0.8 * MM, 4.0 * MM, 10 * MM)  # thickness (across the slot), width (along it), length
 SHAFT = (3.0 * MM, 30 * MM)  # a short electrician's screwdriver, 3 mm shaft: the tip to the handle 30 mm ...
 HANDLE = (20.0 * MM, 45 * MM)  # ... a 45 mm handle (standing in its holder, its top within the arms' reach)
 SCREWDRIVER_MASS = 0.06

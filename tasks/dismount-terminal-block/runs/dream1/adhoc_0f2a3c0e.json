@@ -1,0 +1,554 @@
+{
+  "error": null,
+  "eval": {
+    "created": "2026-11-18T09:50:55.829070+00:00",
+    "embodiment": "yam_arena",
+    "embodiment_info": {
+      "capabilities": [
+        "privileged_success",
+        "resettable",
+        "seedable"
+      ],
+      "control_hz": 20.0,
+      "is_simulated": true
+    },
+    "environment_id": "isaaclab-arena-0.3.1-yam-bimanual-station-calibrated-task-task",
+    "environment_revision": "fa50a8ac3799",
+    "git_commit": "3b87d701e7c72270f11caba78ed97f41e09bb91a-dirty",
+    "grader": null,
+    "grader_config": {},
+    "inspect_robots_version": "0.60.0",
+    "max_seconds": null,
+    "max_steps": 2400,
+    "policy": "dream",
+    "policy_checkpoint": "dreamlabs/dream-1-beta",
+    "policy_config": {
+      "action_horizon": 1,
+      "replan_interval": null,
+      "temperature": null
+    },
+    "seed": 0,
+    "task": "adhoc"
+  },
+  "results": {
+    "errored_trials": 0,
+    "metrics": {
+      "task_score": 0.0
+    },
+    "total_scenes": 1,
+    "total_trials": 1
+  },
+  "samples": [
+    {
+      "epochs": [
+        {
+          "task_score": 0.0
+        }
+      ],
+      "error": null,
+      "instruction": "Take the blue terminal block off the DIN rail with the screwdriver and put it in the tray, and leave the beige blocks where they are.",
+      "judgement_sources": [
+        null
+      ],
+      "operator_judgements": [
+        null
+      ],
+      "operator_messages": [
+        []
+      ],
+      "operator_notes": [
+        null
+      ],
+      "policy_transcripts": [
+        {
+          "control_hz": 20.0,
+          "dry_run": false,
+          "model": "dreamlabs/dream-1-beta",
+          "preroll_steps": 32,
+          "requests": [
+            {
+              "attempts": 1,
+              "infer_ms": 302,
+              "rows": 48,
+              "rows_beyond_limits": 0,
+              "rtt_s": 5.930202992982231,
+              "session_id": "309958bb-0b21-44f7-8970-8f316d32b45d",
+              "step": 32
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 268,
+              "rows": 48,
+              "rows_beyond_limits": 0,
+              "rtt_s": 0.3510339960921556,
+              "session_id": "47ea5266-c9fd-48a2-b1f4-ab19f87b313b",
+              "step": 80
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 262,
+              "rows": 48,
+              "rows_beyond_limits": 0,
+              "rtt_s": 0.35171081498265266,
+              "session_id": "f34db724-45a1-4a7a-a250-9091ce5818be",
+              "step": 128
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 263,
+              "rows": 48,
+              "rows_beyond_limits": 0,
+              "rtt_s": 0.3465196170145646,
+              "session_id": "d4faea09-e5ba-46ab-bd18-82e64ad827a6",
+              "step": 176
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 265,
+              "rows": 48,
+              "rows_beyond_limits": 5,
+              "rtt_s": 0.3552671989891678,
+              "session_id": "9af4984e-7b66-40b8-945c-5cb6ffde405d",
+              "step": 224
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 262,
+              "rows": 48,
+              "rows_beyond_limits": 15,
+              "rtt_s": 0.34839596203528345,
+              "session_id": "226f087d-96a7-4c55-8f8e-104b63b876b4",
+              "step": 272
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 270,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35485621297266334,
+              "session_id": "9c6d5723-e373-4fae-b761-7278d78e7d55",
+              "step": 320
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 264,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.347310304059647,
+              "session_id": "8edf1c0d-1369-4e39-a3a4-40d499b90e8e",
+              "step": 368
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 263,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3520155849400908,
+              "session_id": "104f72fb-8268-4da2-a7db-1130962eee73",
+              "step": 416
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 263,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.34872551599983126,
+              "session_id": "61376187-d52b-458f-9cb6-831487271e9b",
+              "step": 464
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 261,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35400855797342956,
+              "session_id": "ba358856-12a6-47b0-84d5-be29ea1b7329",
+              "step": 512
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 265,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35050469590350986,
+              "session_id": "50dbbf96-f443-411e-aa0a-302ba9b1d747",
+              "step": 560
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 261,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35427624196745455,
+              "session_id": "e029457a-b98a-4009-b0dc-6338a0842564",
+              "step": 608
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 261,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3466082930099219,
+              "session_id": "b2a41162-5060-400f-847b-8cfaeb907927",
+              "step": 656
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 262,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3455110639333725,
+              "session_id": "8bd69a8a-0627-439d-a8aa-49a0b0ce4237",
+              "step": 704
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 263,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3468246120028198,
+              "session_id": "aeda4a66-648d-4e82-b39f-a83d1643601f",
+              "step": 752
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 269,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3536361949518323,
+              "session_id": "1d4eebdb-91fc-4ab8-91f9-e27fe1c1bd3d",
+              "step": 800
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 263,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35425485495943576,
+              "session_id": "055cd761-6e5b-4352-83bd-15acbe8e9a10",
+              "step": 848
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 265,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3498146519996226,
+              "session_id": "d397af5f-512d-4120-82a9-3d13131fe7e1",
+              "step": 896
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 267,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35569793300237507,
+              "session_id": "a9d3fc89-d3ff-41f7-b103-7373d0c0a675",
+              "step": 944
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 266,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3547251640120521,
+              "session_id": "eee68211-185a-436a-853b-6c7d7896f8a5",
+              "step": 992
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 266,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.34871713595930487,
+              "session_id": "1e250e0d-dd02-4c8e-8451-9e6f082719ed",
+              "step": 1040
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 265,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35063001594971865,
+              "session_id": "6aed7d2b-058a-4720-b26d-ebe4b4b81371",
+              "step": 1088
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 267,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35654164699371904,
+              "session_id": "d2e3b425-bcac-40ac-8db1-23c20a9f0303",
+              "step": 1136
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 270,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35483556403778493,
+              "session_id": "eab1ccd5-4600-4139-a420-33b375cb4fda",
+              "step": 1184
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 266,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35729983693454415,
+              "session_id": "77d140ca-98e3-4e8f-b927-e93eea3e73bb",
+              "step": 1232
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 263,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3501347149722278,
+              "session_id": "b041ffc9-3a8a-4ada-a484-af798830bc9a",
+              "step": 1280
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 263,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.34636193490587175,
+              "session_id": "b4e221be-f1a1-4253-8f1d-63cbf2fd7afd",
+              "step": 1328
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 267,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.4730274199973792,
+              "session_id": "83e1fe84-c3f6-4bbc-a677-f28e8076116b",
+              "step": 1376
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 266,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.352130412007682,
+              "session_id": "aa83b9bb-3e8f-4ec8-8127-5a883909aab1",
+              "step": 1424
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 263,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3516351559665054,
+              "session_id": "ef4b6afe-ce26-48bf-bd54-21516dbf6979",
+              "step": 1472
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 263,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3560470440424979,
+              "session_id": "050aea56-4808-41ed-9130-c45393c70cff",
+              "step": 1520
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 266,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3563630989519879,
+              "session_id": "3cf6fff7-4a10-4ea4-8561-d29452106f3a",
+              "step": 1568
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 268,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35340172005817294,
+              "session_id": "d4cb5c44-1224-4187-80b6-8725efc5a6b1",
+              "step": 1616
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 262,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35099289601203054,
+              "session_id": "fd8e0bcc-253f-4181-8fa5-6c5330c6a90b",
+              "step": 1664
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 265,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3560064899502322,
+              "session_id": "7f73c020-d845-476e-9f69-f9d4e17515b9",
+              "step": 1712
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 261,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3521597869694233,
+              "session_id": "35ce1dc5-cfb2-449a-aa50-1c6838c5e261",
+              "step": 1760
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 267,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35549797595012933,
+              "session_id": "cd36e652-14eb-4741-855e-1dcd87e38d84",
+              "step": 1808
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 262,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.5843976669711992,
+              "session_id": "5f965ee7-87b6-4d9b-881d-bb490ad3c149",
+              "step": 1856
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 264,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3563752389745787,
+              "session_id": "01b46343-805b-4d64-87df-e3deac3bdebf",
+              "step": 1904
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 263,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3506815889850259,
+              "session_id": "a0ec9b13-c42e-4c2d-b3f2-732951c98a2c",
+              "step": 1952
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 264,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.36017342808190733,
+              "session_id": "f9d62a67-505e-455f-8fca-965c9ef3e4df",
+              "step": 2000
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 263,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.34911701001692563,
+              "session_id": "76d304f9-7203-4a00-956b-62727b9255de",
+              "step": 2048
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 268,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.35086328093893826,
+              "session_id": "4a81e60e-a270-487c-8b40-3d71fa34e281",
+              "step": 2096
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 265,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.36184582905843854,
+              "session_id": "9ffa3b3a-0179-40a2-8d5c-13b7e63c908e",
+              "step": 2144
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 263,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3487241138936952,
+              "session_id": "d85a653d-6886-4055-8958-a5b93851354a",
+              "step": 2192
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 267,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3561766139464453,
+              "session_id": "3ea22dd8-7ae7-4106-93db-d89e0de95207",
+              "step": 2240
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 267,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3579458750318736,
+              "session_id": "604d7903-7fad-4d80-9839-5a402ed141ca",
+              "step": 2288
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 264,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.34814230096526444,
+              "session_id": "526e447b-5af7-41b8-9638-7c1d0ce3f62a",
+              "step": 2336
+            },
+            {
+              "attempts": 2,
+              "infer_ms": 266,
+              "rows": 48,
+              "rows_beyond_limits": 48,
+              "rtt_s": 0.3520355299115181,
+              "session_id": "4a459351-f260-4102-9171-422f172bbb6f",
+              "step": 2384
+            }
+          ],
+          "rows_per_request": 48,
+          "server_url": null,
+          "tracking_error_rad": {
+            "max": 0.06321985272260268,
+            "mean": 0.03424111609389302
+          }
+        }
+      ],
+      "reduced": {
+        "task_score": 0.0
+      },
+      "scene_id": "scene-0",
+      "scene_metadata": {},
+      "status": "success",
+      "termination_reasons": [
+        "max_steps"
+      ],
+      "trial_metadata": [
+        {
+          "actions": "actions/20261118_095055_5fa60fbb/scene-0-e0.jsonl"
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "completed_at": "2026-11-18T10:06:06.438826+00:00",
+    "duration_s": 910.5381985199638,
+    "frames_dir": "runs/dream1/frames/20261118_095055_5fa60fbb",
+    "mean_inference_latency_s": 0.4710032358043827,
+    "started_at": "2026-11-18T09:50:55.900640+00:00",
+    "total_steps": 2400
+  },
+  "status": "success",
+  "version": 1
+}
